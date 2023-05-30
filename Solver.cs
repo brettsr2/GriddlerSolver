@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -10,9 +12,9 @@ namespace Griddler_Solver
   internal class Definition
   {
     public static Int32 ColorBackground = 0;
-    public static Definition DefinitionBackground = new Definition() { Color = ColorBackground, Count = 1 };
+    public static Definition DefinitionBackground = new Definition() { ColorId = ColorBackground, Count = 1 };
 
-    public Int32 Color
+    public Int32 ColorId
     { get; set; }
 
     public Int32 Count
@@ -22,13 +24,13 @@ namespace Griddler_Solver
     {
       get
       {
-        return (Color == ColorBackground);
+        return (ColorId == ColorBackground);
       }
     }
 
     public override String ToString()
     {
-      return $"[{Color}:{Count}]";
+      return $"[{ColorId}:{Count}]";
     }
   }
   internal class ListSingleDefinition
@@ -42,15 +44,7 @@ namespace Griddler_Solver
     public void AddDefinition(Int32 color, Int32 count)
     {
       Debug.Assert(color != Definition.ColorBackground);
-
-      if (Data.Count > 0)
-      {
-        if (Data[Data.Count - 1].Color == color)
-        {
-          Data.Add(Definition.DefinitionBackground);
-        }
-      }
-      Data.Add(new Definition { Color = color,Count = count });
+      Data.Add(new Definition { ColorId = color, Count = count });
     }
 
     public override String ToString()
@@ -65,8 +59,13 @@ namespace Griddler_Solver
 
   internal class Solver
   {
-    private const Int32 cellSize = 50;
+    private const Int32 cellSize = 15;
     private readonly SolidColorBrush BrushLime = new SolidColorBrush(Colors.Lime);
+
+    private Int32 MaxRowItemsCount
+    { get; set; } = 0;
+    private Int32 MaxColItemsCount
+    { get; set; } = 0;
 
     private Int32 CountRows
     {
@@ -83,6 +82,8 @@ namespace Griddler_Solver
       }
     }
 
+    public List<SolidColorBrush> ListSolidColorBrush = new List<SolidColorBrush>();
+
     private ListDefinition DefinitionListRows = new ListDefinition();
     private ListDefinition DefinitionListColumns = new ListDefinition();
 
@@ -92,31 +93,90 @@ namespace Griddler_Solver
 
     public void AddSingleDefinitionRow(ListSingleDefinition list)
     {
+      MaxRowItemsCount = Math.Max(MaxRowItemsCount, list.Data.Count);
       DefinitionListRows.Add(list);
     }
-    public void AddSingleDefinitionColumn(ListSingleDefinition list)
+    public void AddSingleDefinitionCol(ListSingleDefinition list)
     {
+      MaxColItemsCount = Math.Max(MaxColItemsCount, list.Data.Count);
       DefinitionListColumns.Add(list);
-    }
-
-    private Rectangle CreateRectangle(Int32 left, Int32 top, SolidColorBrush brush)
-    {
-      Rectangle rect = new Rectangle();
-
-      rect.Stroke = brush;
-      rect.Fill = brush;
-
-      rect.Width = cellSize;
-      rect.Height = cellSize;
-      Canvas.SetLeft(rect, left);
-      Canvas.SetTop(rect, top);
-
-      return rect;
     }
 
     public void Draw(Canvas canvas)
     {
+      Double FontSize = Math.Min(canvas.ActualWidth, canvas.ActualHeight) / 40;
+
+      Action<Double, Double, SolidColorBrush> createRectangle = (left, top, brush) =>
+      {
+        Rectangle rect = new Rectangle();
+        canvas.Children.Add(rect);
+
+        rect.Stroke = brush;
+        rect.Fill = brush;
+
+        rect.Width = cellSize;
+        rect.Height = cellSize;
+        
+        Canvas.SetLeft(rect, left);
+        Canvas.SetTop(rect, top);
+      };
+      Action<Double, Double, String, SolidColorBrush> createText = (left, top, text, brush) =>
+      {
+        Label label = new Label();
+        canvas.Children.Add(label);
+
+        label.Content = text;
+        label.FontSize = FontSize;
+        label.Foreground = brush;
+        label.Padding = new Thickness(0, 0, 0, 0);
+
+        label.Measure(new Size(double.MaxValue, double.MaxValue));
+
+        left -= label.DesiredSize.Width / 2;
+        top -= label.DesiredSize.Height / 2;
+
+        Canvas.SetLeft(label, left);
+        Canvas.SetTop(label, top);
+      };
+
+      Int32 currentX, currentY;
+
+      currentX = MaxRowItemsCount * cellSize;
+      for (Int32 col = 0; col < CountColumns; col++)
+      {
+        ListSingleDefinition list = DefinitionListColumns[col];
+        currentY = (MaxColItemsCount - list.Data.Count) * cellSize;
+
+        foreach (var definition in list.Data)
+        {
+          createRectangle(currentX, currentY, ListSolidColorBrush[definition.ColorId]);
+          createText(currentX + cellSize / 2, currentY + cellSize / 2, definition.Count.ToString(), ListSolidColorBrush[1]);
+
+          currentY += cellSize;
+        }
+
+        currentX += cellSize;
+      }
+
+      currentY = MaxColItemsCount  * cellSize;
       for (Int32 row = 0; row < CountRows; row++)
+      {
+        ListSingleDefinition list = DefinitionListRows[row];
+        currentX = (MaxRowItemsCount - list.Data.Count) * cellSize;
+
+        foreach (var definition in list.Data)
+        {
+          createRectangle(currentX, currentY, ListSolidColorBrush[definition.ColorId]);
+          createText(currentX + cellSize / 2, currentY + cellSize / 2, definition.Count.ToString(), ListSolidColorBrush[1]);
+          currentX += cellSize;
+        }
+
+        currentY += cellSize;
+      }
+
+      return;
+
+      /*for (Int32 row = 0; row < CountRows; row++)
       {
         ListSingleDefinition list = DefinitionListRows[row];
         if (list.Solved)
@@ -140,7 +200,7 @@ namespace Griddler_Solver
           {
             brush = new SolidColorBrush(Colors.LightGray);
           }
-          else if (_Board[row, column].Color == Definition.ColorBackground)
+          else if (_Board[row, column].ColorId == Definition.ColorBackground)
           {
             brush = new SolidColorBrush(Colors.White);
           }
@@ -151,7 +211,7 @@ namespace Griddler_Solver
 
           canvas.Children.Add(CreateRectangle(cellSize + column * cellSize, cellSize + row * cellSize, brush));
         }
-      }
+      }*/
     }
 
     private Definition GetCell(Boolean isRow, Int32 indexFirst, Int32 indexSecond)
@@ -217,7 +277,7 @@ namespace Griddler_Solver
           for (Int32 indexSecond = 0; indexSecond < definition.Count; indexSecond++)
           {
             Definition cell = GetCell(isRows, indexFirst, currentSecond);
-            if (cell != null && cell.Color != definition.Color)
+            if (cell != null && cell.ColorId != definition.ColorId)
             {
               doNotFit = true;
               break;
@@ -291,7 +351,7 @@ namespace Griddler_Solver
               continue;
             }
 
-            if (solved == false || cell == null || cell.Color != definition.Color)
+            if (solved == false || cell == null || cell.ColorId != definition.ColorId)
             {
               solved = false;
               continue;

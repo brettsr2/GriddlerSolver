@@ -21,12 +21,11 @@
           <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <Label Grid.Column="0" Content="Url:" />
-        <TextBlock Grid.Column="1" />
-        <Button Grid.Column="2" Content="Go" Click="OnButtonGo_Click"></Button>
+        <TextBox x:Name="textBlockUrl" Grid.Column="1" MinHeight="26" VerticalAlignment="Center" VerticalContentAlignment="Center">https://www.griddlers.net/cs_CZ/nonogram/-/g/183521</TextBox>
+        <Button Grid.Column="2" MinWidth="100" Content="Go" Click="OnButtonGo_Click"></Button>
       </Grid>
     </StackPanel>
-    <Canvas x:Name="canvas" Grid.Row="1" MouseDown="OnCanvas_MouseDown"/>
-    <Button x:Name="loadInput" Grid.Row="2" Content="Load input image" Click="OnLoadInput_Click"/>
-    <Button x:Name="solve" Grid.Row="3" Content="Solve" Click="OnSolve_Click"/>
+    <Canvas x:Name="canvas" Grid.Row="1" />
+    <Button x:Name="solve" Grid.Row="3" MinHeight="26" Content="Solve" Click="OnSolve_Click" />
   </Grid>
 </Window>
