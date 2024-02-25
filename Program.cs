@@ -39,9 +39,9 @@ namespace Console {
             new int[] { 1, 1 },
         };
 
-        static void Main(string[] args) {
+        /*static void Main(string[] args) {
             Nonogram nonogram = new Nonogram(RowHints, ColumnHints, new ConsoleLogger());
             nonogram.Solve();
-        }
+        }*/
     }
 }
