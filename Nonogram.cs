@@ -6,13 +6,13 @@ namespace NonogramSolver {
     public class Nonogram {
         private readonly int[][] rowHints;
         private readonly int[][] columnHints;
-        private readonly ILogger logger;
+        private readonly ILogger? logger;
         private readonly CellValue[,] map;
         private readonly LineSolver lineSolver;
         private readonly int width;
         private readonly int height;
 
-        public Nonogram(int[][] rowHints, int[][] columnHints, ILogger logger = null) {
+        public Nonogram(int[][] rowHints, int[][] columnHints, ILogger? logger = null) {
             this.rowHints = rowHints;
             this.columnHints = columnHints;
             this.logger = logger;

@@ -1,95 +1,52 @@
 ﻿using System;
 using System.Windows;
-using System.Windows.Input;
-using System.Windows.Media.Imaging;
 using System.IO;
 
 using System.Net.Http;
 using System.Collections.Generic;
-using Windows.System;
+
+using Microsoft.Win32;
+
+using NonogramSolver;
 
 namespace Griddler_Solver
 {
   public partial class MainWindow : Window
   {
-    private Solver _Solver
+    private String _FileDialogFilter = "JSON file (*.json)|*.json";
+
+    private Solver? _Solver
     { get; set; } = new Solver();
 
     public MainWindow()
     {
       InitializeComponent();
+
+      comboBoxUrl.Items.Add("https://www.griddlers.net/cs_CZ/nonogram/-/g/183521");
+      comboBoxUrl.Items.Add("https://www.griddlers.net/cs_CZ/nonogram/-/g/276577");
     }
 
     private void Draw()
     {
       canvas.Children.Clear();
-      _Solver.Draw(canvas);
+      _Solver?.Draw(canvas);
     }
 
     private void OnSolve_Click(object sender, RoutedEventArgs e)
     {
-      /*_Solver = new Solver();
+      Int32[][] rows = _Solver!.Rows;
+      Int32[][] cols = _Solver!.Cols;
 
-      Int32 black = 1;
+      Nonogram nonogram = new Nonogram(rows, cols);
+      _Solver.Result = nonogram.Solve();
 
-      // rows
-      ListSingleDefinition list = new ListSingleDefinition();
-      list.AddDefinition(black, 3);
-      _Solver.AddSingleDefinitionRow(list);
-
-      list = new ListSingleDefinition();
-      list.AddDefinition(black, 1);
-      list.AddDefinition(black, 1);
-      _Solver.AddSingleDefinitionRow(list);
-
-      list = new ListSingleDefinition();
-      list.AddDefinition(black, 2);
-      list.AddDefinition(black, 2);
-      _Solver.AddSingleDefinitionRow(list);
-
-      list = new ListSingleDefinition();
-      _Solver.AddSingleDefinitionRow(list);
-
-      list = new ListSingleDefinition();
-      list.AddDefinition(black, 5);
-      _Solver.AddSingleDefinitionRow(list);
-
-      // columns
-      list = new ListSingleDefinition();
-      list.AddDefinition(black, 1);
-      list.AddDefinition(black, 1);
-      _Solver.AddSingleDefinitionCol(list);
-
-      list = new ListSingleDefinition();
-      list.AddDefinition(black, 3);
-      list.AddDefinition(black, 1);
-      _Solver.AddSingleDefinitionCol(list);
-
-      list = new ListSingleDefinition();
-      list.AddDefinition(black, 1);
-      list.AddDefinition(black, 1);
-      _Solver.AddSingleDefinitionCol(list);
-
-      list = new ListSingleDefinition();
-      list.AddDefinition(black, 3);
-      list.AddDefinition(black, 1);
-      _Solver.AddSingleDefinitionCol(list);
-
-      list = new ListSingleDefinition();
-      list.AddDefinition(black, 1);
-      list.AddDefinition(black, 1);
-      _Solver.AddSingleDefinitionCol(list);
-
-      _Solver.Solve();
-      Draw();*/
+      Draw();
     }
 
-    private async void OnButtonGo_Click(object sender, RoutedEventArgs e)
+    private void OnButtondDownload_Click(object sender, RoutedEventArgs e)
     {
       _Solver = new Solver();
-
-      // https://www.griddlers.net/cs_CZ/nonogram/-/g/183521
-      String url = textBlockUrl.Text;
+      String url = _Solver.Url = comboBoxUrl.Text;
 
       Int32 pos = url.LastIndexOf('/') + 1;
       String id = url.Substring(pos);
@@ -98,12 +55,7 @@ namespace Griddler_Solver
       // https://www.griddlers.net/cs_CZ/nonogram/-/g/t1685312821998/i01?p_p_lifecycle=2&p_p_resource_id=griddlerPuzzle&p_p_cacheability=cacheLevelPage&_gpuzzles_WAR_puzzles_id=183521&_gpuzzles_WAR_puzzles_lite=false
       url += $"t1679057429974/i01?p_p_lifecycle=2&p_p_resource_id=griddlerPuzzle&p_p_cacheability=cacheLevelPage&_gpuzzles_WAR_puzzles_id={id}&_gpuzzles_WAR_puzzles_lite=false";
 
-      HttpClient webClient = new HttpClient();
-
-      using HttpResponseMessage response = await webClient.GetAsync(url);
-      response.EnsureSuccessStatusCode();
-      String js = await response.Content.ReadAsStringAsync();
-
+      String js = new HttpClient().GetStringAsync(url).Result;
       String puzzle = "var puzzle = ";
       
       pos = js.IndexOf(puzzle);
@@ -144,8 +96,34 @@ namespace Griddler_Solver
       parseJsonInput(false, jsonPuzzle.topHeader);
 
       _Solver.ListSolidColorBrush = jsonPuzzle.GetListSolidColorBrush();
-      _Solver.Solve();
 
+      Draw();
+    }
+    private void OnButtonGo_Save(object sender, RoutedEventArgs e)
+    {
+      SaveFileDialog fileDialog = new();
+      fileDialog.Filter = _FileDialogFilter;
+
+      if (fileDialog.ShowDialog() == true)
+      {
+        String json = Newtonsoft.Json.JsonConvert.SerializeObject(_Solver);
+        File.WriteAllText(fileDialog.FileName, json);
+      }
+    }
+    private void OnButtonGo_Load(object sender, RoutedEventArgs e)
+    {
+      OpenFileDialog fileDialog = new OpenFileDialog();
+      fileDialog.Filter = _FileDialogFilter;
+
+      if (fileDialog.ShowDialog() == true)
+      {
+        String json = File.ReadAllText(fileDialog.FileName);
+        _Solver = Newtonsoft.Json.JsonConvert.DeserializeObject<Solver>(json);
+      }
+    }
+
+    private void OnCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
       Draw();
     }
   }

@@ -7,6 +7,8 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
+using NonogramSolver;
+
 namespace Griddler_Solver
 {
   internal class Definition
@@ -59,12 +61,14 @@ namespace Griddler_Solver
 
   internal class Solver
   {
-    private const Int32 cellSize = 15;
-    private readonly SolidColorBrush BrushLime = new SolidColorBrush(Colors.Lime);
+    private SolidColorBrush _BrushGrey = new(Colors.Gray);
+    private SolidColorBrush _BrushBlack = new(Colors.Black);
 
-    private Int32 MaxRowItemsCount
+    private Double _CellSize = 15;
+
+    private Int32 _MaxRowItemsCount
     { get; set; } = 0;
-    private Int32 MaxColItemsCount
+    private Int32 _MaxColItemsCount
     { get; set; } = 0;
 
     private Int32 CountRows
@@ -82,6 +86,42 @@ namespace Griddler_Solver
       }
     }
 
+    public Int32[][] Rows
+    {
+      get
+      {
+        return GetHints(DefinitionListRows);
+      }
+    }
+    public Int32[][] Cols
+    {
+      get
+      {
+        return GetHints(DefinitionListColumns);
+      }
+    }
+
+    public String Url
+    { get; set; } = String.Empty;
+
+    public NonogramSolveResult? Result
+    { get; set; } = null;
+
+    private Int32[][] GetHints(ListDefinition list)
+    {
+      Int32[][] hints = new Int32[list.Count][];
+      for (Int32 index = 0; index < list.Count; index++)
+      {
+        List<Int32> listHint = new List<Int32>();
+        foreach (var hint in list[index].Data)
+        {
+          listHint.Add(hint.Count);
+        }
+        hints[index] = listHint.ToArray();
+      }
+
+      return hints;
+    }
     public List<SolidColorBrush> ListSolidColorBrush = new List<SolidColorBrush>();
 
     private ListDefinition DefinitionListRows = new ListDefinition();
@@ -93,18 +133,22 @@ namespace Griddler_Solver
 
     public void AddSingleDefinitionRow(ListSingleDefinition list)
     {
-      MaxRowItemsCount = Math.Max(MaxRowItemsCount, list.Data.Count);
+      _MaxRowItemsCount = Math.Max(_MaxRowItemsCount, list.Data.Count);
       DefinitionListRows.Add(list);
     }
     public void AddSingleDefinitionCol(ListSingleDefinition list)
     {
-      MaxColItemsCount = Math.Max(MaxColItemsCount, list.Data.Count);
+      _MaxColItemsCount = Math.Max(_MaxColItemsCount, list.Data.Count);
       DefinitionListColumns.Add(list);
     }
 
     public void Draw(Canvas canvas)
     {
-      Double FontSize = Math.Min(canvas.ActualWidth, canvas.ActualHeight) / 40;
+      if (CountRows != 0 && CountColumns != 0)
+      {
+        _CellSize = Math.Min(canvas.ActualHeight / (_MaxColItemsCount + CountRows), canvas.ActualWidth / (_MaxRowItemsCount + CountColumns));
+      }
+      Double FontSize = _CellSize * 0.8;
 
       Action<Double, Double, SolidColorBrush> createRectangle = (left, top, brush) =>
       {
@@ -114,8 +158,8 @@ namespace Griddler_Solver
         rect.Stroke = brush;
         rect.Fill = brush;
 
-        rect.Width = cellSize;
-        rect.Height = cellSize;
+        rect.Width = _CellSize;
+        rect.Height = _CellSize;
         
         Canvas.SetLeft(rect, left);
         Canvas.SetTop(rect, top);
@@ -138,80 +182,107 @@ namespace Griddler_Solver
         Canvas.SetLeft(label, left);
         Canvas.SetTop(label, top);
       };
+      Action<Double, Double, Double, Double, Double, SolidColorBrush> createLine = (x1, y1, x2, y2, thickness, brush) =>
+      {
+        Line line = new();
+        canvas.Children.Add(line);
 
-      Int32 currentX, currentY;
+        line.Stroke = brush;
+        line.StrokeThickness = thickness;
 
-      currentX = MaxRowItemsCount * cellSize;
+        line.X1 = x1;
+        line.X2 = x2;
+
+        line.Y1 = y1;
+        line.Y2 = y2;
+      };
+
+      Double currentX, currentY;
+
+      currentX = _MaxRowItemsCount * _CellSize;
       for (Int32 col = 0; col < CountColumns; col++)
       {
         ListSingleDefinition list = DefinitionListColumns[col];
-        currentY = (MaxColItemsCount - list.Data.Count) * cellSize;
+        currentY = (_MaxColItemsCount - list.Data.Count) * _CellSize;
 
         foreach (var definition in list.Data)
         {
           createRectangle(currentX, currentY, ListSolidColorBrush[definition.ColorId]);
-          createText(currentX + cellSize / 2, currentY + cellSize / 2, definition.Count.ToString(), ListSolidColorBrush[1]);
+          createText(currentX + _CellSize / 2, currentY + _CellSize / 2, definition.Count.ToString(), ListSolidColorBrush[1]);
 
-          currentY += cellSize;
+          currentY += _CellSize;
         }
 
-        currentX += cellSize;
+        currentX += _CellSize;
       }
 
-      currentY = MaxColItemsCount  * cellSize;
+      currentY = _MaxColItemsCount  * _CellSize;
       for (Int32 row = 0; row < CountRows; row++)
       {
         ListSingleDefinition list = DefinitionListRows[row];
-        currentX = (MaxRowItemsCount - list.Data.Count) * cellSize;
+        currentX = (_MaxRowItemsCount - list.Data.Count) * _CellSize;
 
         foreach (var definition in list.Data)
         {
           createRectangle(currentX, currentY, ListSolidColorBrush[definition.ColorId]);
-          createText(currentX + cellSize / 2, currentY + cellSize / 2, definition.Count.ToString(), ListSolidColorBrush[1]);
-          currentX += cellSize;
+          createText(currentX + _CellSize / 2, currentY + _CellSize / 2, definition.Count.ToString(), ListSolidColorBrush[1]);
+          currentX += _CellSize;
         }
 
-        currentY += cellSize;
+        currentY += _CellSize;
       }
 
-      return;
-
-      /*for (Int32 row = 0; row < CountRows; row++)
+      if (Result?.IsSolved == true)
       {
-        ListSingleDefinition list = DefinitionListRows[row];
-        if (list.Solved)
+        currentX = _MaxRowItemsCount * _CellSize;
+        currentY = _MaxColItemsCount * _CellSize;
+
+        for (Int32 row = 0; row <= CountRows; row++)
         {
-          canvas.Children.Add(CreateRectangle(0, cellSize + row * cellSize, BrushLime));
+          Double x2 = currentX + CountColumns * _CellSize;
+          Double y = currentY + row * _CellSize;
+          
+          SolidColorBrush brush = _BrushGrey;
+          Double thickness = 1;
+
+          if (row % 5 == 0)
+          {
+            brush = _BrushBlack;
+            thickness = 2;
+          }
+
+          createLine(currentX, y, x2, y, thickness, brush);
+        }
+        for (Int32 col = 0; col <= CountColumns; col++)
+        {
+          Double x = currentX + col * _CellSize;
+          Double y2 = currentY + CountRows * _CellSize;
+
+          SolidColorBrush brush = _BrushGrey;
+          Double thickness = 1;
+
+          if (col % 5 == 0)
+          {
+            brush = _BrushBlack;
+            thickness = 2;
+          }
+
+          createLine(x, currentY, x, y2, thickness, brush);
         }
 
-        for (Int32 column = 0; column < CountColumns; column++)
+        for (Int32 col = 0; col < CountColumns; col++)
         {
-          if (row == 0)
+          for (Int32 row = 0; row < CountRows; row++)
           {
-            list = DefinitionListColumns[column];
-            if (list.Solved)
+            if (Result.Result?[row, col] == 1)
             {
-              canvas.Children.Add(CreateRectangle(cellSize + column * cellSize, 0, BrushLime));
+              Double x = currentX + col * _CellSize;
+              Double y = currentY + row * _CellSize;
+              createRectangle(x, y, _BrushBlack);
             }
           }
-
-          SolidColorBrush brush;
-          if (_Board[row, column] == null)
-          {
-            brush = new SolidColorBrush(Colors.LightGray);
-          }
-          else if (_Board[row, column].ColorId == Definition.ColorBackground)
-          {
-            brush = new SolidColorBrush(Colors.White);
-          }
-          else
-          {
-            brush = new SolidColorBrush(Colors.Black);
-          }
-
-          canvas.Children.Add(CreateRectangle(cellSize + column * cellSize, cellSize + row * cellSize, brush));
         }
-      }*/
+      }
     }
 
     private Definition GetCell(Boolean isRow, Int32 indexFirst, Int32 indexSecond)
