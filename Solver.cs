@@ -70,8 +70,8 @@ namespace Griddler_Solver
     public String Url
     { get; set; } = String.Empty;
 
-    public NonogramSolveResult? Result
-    { get; set; } = null;
+    public NonogramSolveResult Result
+    { get; set; } = new();
 
     private Int32[][] GetHints(Hint[][] list)
     {
@@ -100,7 +100,8 @@ namespace Griddler_Solver
       return max;
     }
 
-    public List<SolidColorBrush> ListSolidColorBrush = new List<SolidColorBrush>();
+    public List<PuzzleColors> ListColors
+    { get; set; } = [];
 
     public void Draw(Canvas canvas)
     {
@@ -167,8 +168,8 @@ namespace Griddler_Solver
 
         foreach (Hint hint in list)
         {
-          createRectangle(currentX, currentY, ListSolidColorBrush[hint.ColorId]);
-          createText(currentX + _CellSize / 2, currentY + _CellSize / 2, hint.Count.ToString(), ListSolidColorBrush[1]);
+          createRectangle(currentX, currentY, ListColors[hint.ColorId].ColorBrush);
+          createText(currentX + _CellSize / 2, currentY + _CellSize / 2, hint.Count.ToString(), ListColors[1].ColorBrush);
 
           currentY += _CellSize;
         }
@@ -184,8 +185,8 @@ namespace Griddler_Solver
 
         foreach (Hint hint in list)
         {
-          createRectangle(currentX, currentY, ListSolidColorBrush[hint.ColorId]);
-          createText(currentX + _CellSize / 2, currentY + _CellSize / 2, hint.Count.ToString(), ListSolidColorBrush[1]);
+          createRectangle(currentX, currentY, ListColors[hint.ColorId].ColorBrush);
+          createText(currentX + _CellSize / 2, currentY + _CellSize / 2, hint.Count.ToString(), ListColors[1].ColorBrush);
           currentX += _CellSize;
         }
 

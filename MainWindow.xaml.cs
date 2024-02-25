@@ -1,16 +1,13 @@
 ﻿using System;
-using System.Windows;
-using System.IO;
-
-using System.Net.Http;
 using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
+using System.Text.Json;
+using System.Windows;
 
 using Microsoft.Win32;
 
 using NonogramSolver;
-using System.Windows.Documents;
-using System.Text.Json.Serialization;
-using System.Text.Json;
 
 namespace Griddler_Solver
 {
@@ -103,7 +100,7 @@ namespace Griddler_Solver
       parseJsonInput(true, jsonPuzzle.leftHeader);
       parseJsonInput(false, jsonPuzzle.topHeader);
 
-      _Solver.ListSolidColorBrush = jsonPuzzle.GetListSolidColorBrush();
+      _Solver.ListColors = jsonPuzzle.GetListSolidColorBrush();
 
       Draw();
     }
@@ -133,7 +130,9 @@ namespace Griddler_Solver
       if (fileDialog.ShowDialog() == true)
       {
         String json = File.ReadAllText(fileDialog.FileName);
-        _Solver = Newtonsoft.Json.JsonConvert.DeserializeObject<Solver>(json);
+        _Solver = JsonSerializer.Deserialize<Solver>(json);
+
+        Draw();
       }
     }
 

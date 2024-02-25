@@ -6,19 +6,14 @@ namespace Griddler_Solver.Json
 {
   class Puzzle
   {
-    public List<SolidColorBrush> GetListSolidColorBrush()
+    public List<PuzzleColors> GetListSolidColorBrush()
     {
-      List<SolidColorBrush> listSolidColorBrush = new List<SolidColorBrush>();
-      listSolidColorBrush.Add(new SolidColorBrush());
+      List<PuzzleColors> listSolidColorBrush = [];
+      listSolidColorBrush.Add(new PuzzleColors());
 
       foreach (Int32 color in usedColors)
       {
-        String hexColor = colors[color];
-
-        var solidBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#" + hexColor));
-        solidBrush.Freeze();
-
-        listSolidColorBrush.Add(solidBrush);
+        listSolidColorBrush.Add(new PuzzleColors() { HexColor = "#" + colors[color] });
       }
 
       return listSolidColorBrush;
