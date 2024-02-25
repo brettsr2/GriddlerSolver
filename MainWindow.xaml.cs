@@ -8,6 +8,9 @@ using System.Collections.Generic;
 using Microsoft.Win32;
 
 using NonogramSolver;
+using System.Windows.Documents;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace Griddler_Solver
 {
@@ -34,8 +37,8 @@ namespace Griddler_Solver
 
     private void OnSolve_Click(object sender, RoutedEventArgs e)
     {
-      Int32[][] rows = _Solver!.Rows;
-      Int32[][] cols = _Solver!.Cols;
+      Int32[][] rows = _Solver!.Rows!;
+      Int32[][] cols = _Solver!.Cols!;
 
       Nonogram nonogram = new Nonogram(rows, cols);
       _Solver.Result = nonogram.Solve();
@@ -74,21 +77,26 @@ namespace Griddler_Solver
 
       Action<Boolean, List<List<List<Int32>>>> parseJsonInput = (isRow, listItems) =>
       {
-        foreach (var items in listItems)
+        Hint[][] hints = new Hint[listItems.Count][];
+        for (Int32 index = 0; index < listItems.Count; index++)
         {
-          ListSingleDefinition list = new ListSingleDefinition();
-          foreach (var item in items)
+          List<Hint> listHint = new List<Hint>();
+          
+          foreach (var item in listItems[index])
           {
-            list.AddDefinition(item[0], item[1]);
+            listHint.Add(new Hint() { ColorId = item[0], Count = item[1] });
           }
-          if (isRow)
-          {
-            _Solver.AddSingleDefinitionRow(list);
-          }
-          else
-          {
-            _Solver.AddSingleDefinitionCol(list);
-          }
+
+          hints[index] = listHint.ToArray();
+        }
+
+        if (isRow)
+        {
+          _Solver.HintsRow = hints;
+        }
+        else
+        {
+          _Solver.HintsColumn = hints;
         }
       };
 
@@ -99,18 +107,25 @@ namespace Griddler_Solver
 
       Draw();
     }
-    private void OnButtonGo_Save(object sender, RoutedEventArgs e)
+    private void OnButtonSave_Click(object sender, RoutedEventArgs e)
     {
       SaveFileDialog fileDialog = new();
       fileDialog.Filter = _FileDialogFilter;
+      fileDialog.FileName = "Nonogram.json";
 
       if (fileDialog.ShowDialog() == true)
       {
-        String json = Newtonsoft.Json.JsonConvert.SerializeObject(_Solver);
+        JsonSerializerOptions options = new JsonSerializerOptions
+        {
+          IgnoreReadOnlyProperties = true,
+          WriteIndented = true
+        };
+
+        String json = JsonSerializer.Serialize(_Solver, options);
         File.WriteAllText(fileDialog.FileName, json);
       }
     }
-    private void OnButtonGo_Load(object sender, RoutedEventArgs e)
+    private void OnButtonLoad_Click(object sender, RoutedEventArgs e)
     {
       OpenFileDialog fileDialog = new OpenFileDialog();
       fileDialog.Filter = _FileDialogFilter;
