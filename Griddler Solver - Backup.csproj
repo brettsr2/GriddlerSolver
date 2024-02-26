@@ -7,14 +7,10 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove=".editorconfig" />
     <None Remove=".gitignore" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-  </ItemGroup>
-  <ItemGroup>
-    <EditorConfigFiles Remove="D:\Coding\GriddlerSolver\.editorconfig" />
   </ItemGroup>
   <ItemGroup>
     <EditorConfigFiles Remove="D:\Coding\GriddlerSolver\.editorconfig" />

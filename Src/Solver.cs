@@ -6,8 +6,6 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-using NonogramSolver;
-
 namespace Griddler_Solver
 {
   internal class Solver
@@ -69,8 +67,10 @@ namespace Griddler_Solver
 
     public String Url
     { get; set; } = String.Empty;
+    public String Name
+    { get; set; } = String.Empty;
 
-    public NonogramSolveResult Result
+    public Nonogram.NonogramSolveResult Result
     { get; set; } = new();
 
     private Int32[][] GetHints(Hint[][] list)
@@ -235,7 +235,7 @@ namespace Griddler_Solver
         {
           for (Int32 row = 0; row < HintsRowCount; row++)
           {
-            if (Result.Result?[row, col] == 1)
+            if (Result.Result?[row][col] == 1)
             {
               Double x = currentX + col * _CellSize;
               Double y = currentY + row * _CellSize;
