@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows;
-
+using Griddler_Solver.Windows;
 using Microsoft.Win32;
 
 using NonogramSolver;
@@ -37,8 +38,14 @@ namespace Griddler_Solver
       Int32[][] rows = _Solver!.Rows!;
       Int32[][] cols = _Solver!.Cols!;
 
-      Nonogram nonogram = new Nonogram(rows, cols);
-      _Solver.Result = nonogram.Solve();
+      ProgressWindow progressWindow = new();
+      progressWindow.Show();
+
+      Task.Run(() =>
+      {
+          Nonogram nonogram = new Nonogram(rows, cols, progressWindow);
+          _Solver.Result = nonogram.Solve();
+      });
 
       Draw();
     }
