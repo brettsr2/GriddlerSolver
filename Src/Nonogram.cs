@@ -54,8 +54,8 @@ namespace Griddler_Solver
       bool hasChanged = true;
       int iteration = 0;
 
-      Stopwatch stopWatch = new Stopwatch();
-      stopWatch.Start();
+      Stopwatch stopWatchGlobal = new Stopwatch();
+      stopWatchGlobal.Start();
 
       while (hasChanged)
       {
@@ -63,7 +63,7 @@ namespace Griddler_Solver
         stopWatchIteration.Start();
 
         iteration++;
-        logger?.AddMessage("Iteration: " + iteration);
+        logger?.AddMessage($"Iteration {iteration} started");
 
         hasChanged = false;
 
@@ -96,21 +96,22 @@ namespace Griddler_Solver
         }
 
         stopWatchIteration.Stop();
-        PrintIterationStatistic(stopWatchIteration.Elapsed);
+        logger?.AddMessage($"Iteration {iteration} ended");
+        PrintIterationStatistic(stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
       }
 
-      stopWatch.Stop();
+      stopWatchGlobal.Stop();
 
       return new NonogramSolveResult
       {
         IsSolved = IsSolved(),
         Result = Convert(),
         Iterations = iteration,
-        TimeTaken = stopWatch.Elapsed,
+        TimeTaken = stopWatchGlobal.Elapsed,
       };
     }
 
-    private void PrintIterationStatistic(TimeSpan elapsed)
+    private void PrintIterationStatistic(TimeSpan globalElapsed, TimeSpan iterationElapsed)
     {
       Int32 unknownCount = 0, blankCount = 0, filledCount = 0;
 
@@ -136,7 +137,7 @@ namespace Griddler_Solver
       Int32 total = height * width;
       Int32 percentUnknown = unknownCount * 100 / total;
 
-      logger?.AddMessage($"Cells: {total} Unknown: {unknownCount} ({percentUnknown}%), Blank: {blankCount}, Filled {filledCount}, Time: {elapsed}");
+      logger?.AddMessage($"[{globalElapsed.ToString(@"mm\:ss")}]: Cells: {total} Unknown: {unknownCount} ({percentUnknown}%), Blank: {blankCount}, Filled {filledCount}, Time: {iterationElapsed.TotalSeconds} seconds");
     }
 
     private bool IsSolved()
