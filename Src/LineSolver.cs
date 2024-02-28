@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Griddler_Solver
@@ -12,18 +13,20 @@ namespace Griddler_Solver
 
   public class LineSolver
   {
-    private readonly IList<CellValue[]> currentLinePermutations;
+    public UInt64 GeneratedPermutations
+    { get; set; }
 
-    internal IList<CellValue[]> CurrentLinePermutations => currentLinePermutations;
+    private readonly IList<CellValue[]> _CurrentLinePermutations;
 
     public LineSolver()
     {
-      currentLinePermutations = new List<CellValue[]>();
+      _CurrentLinePermutations = new List<CellValue[]>();
     }
 
-    internal CellValue[] Solve(CellValue[] line, int[] hints)
+    internal CellValue[] Solve(CellValue[] line, Hint[] hints)
     {
-      currentLinePermutations.Clear();
+      _CurrentLinePermutations.Clear();
+      GeneratedPermutations = 0;
 
       if (IsLineFull(line))
       {
@@ -33,13 +36,15 @@ namespace Griddler_Solver
       var clone = line.ToArray();
 
       // If line is empty
-      if (hints.Length <= 1 && hints[0] == 0)
+      if (hints.Length <= 1 && hints[0].IsBackground)
       {
         FillEmptyCells(clone);
         return clone;
       }
 
       GeneratePermutations(line.Length, hints);
+      GeneratedPermutations = Convert.ToUInt64(_CurrentLinePermutations.Count);
+
       var filteredPermutations = FilterPermutations(clone);
       Merge(clone, filteredPermutations);
 
@@ -50,7 +55,7 @@ namespace Griddler_Solver
     {
       List<CellValue[]> validPermutations = new List<CellValue[]>();
 
-      foreach (var permutation in currentLinePermutations)
+      foreach (var permutation in _CurrentLinePermutations)
       {
         bool isValid = true;
 
@@ -75,7 +80,7 @@ namespace Griddler_Solver
       return validPermutations;
     }
 
-    internal void GeneratePermutations(int length, int[] hints)
+    internal void GeneratePermutations(int length, Hint[] hints)
     {
       CellValue[] line = new CellValue[length];
 
@@ -84,15 +89,15 @@ namespace Griddler_Solver
         line[i] = CellValue.Unknown;
       }
 
-      GeneratePermutations(line, 0, new Queue<int>(hints));
+      GeneratePermutations(line, 0, new Queue<Hint>(hints));
     }
 
-    private void GeneratePermutations(CellValue[] line, int startIdx, Queue<int> hints)
+    private void GeneratePermutations(CellValue[] line, int startIdx, Queue<Hint> hints)
     {
       if (!hints.Any())
       {
         FillEmptyCells(line);
-        currentLinePermutations.Add(line.ToArray());
+        _CurrentLinePermutations.Add(line.ToArray());
 
         return;
       }
@@ -100,14 +105,14 @@ namespace Griddler_Solver
       var hint = hints.Dequeue();
 
       // This maximum index this hint can be and still fit the others on
-      int maxStartingIndex = line.Length - hints.Sum() - hints.Count - hint + 1;
+      int maxStartingIndex = line.Length - hints.Sum(h => h.Count) - hints.Count - hint.Count + 1;
 
       for (int i = startIdx; i < maxStartingIndex; i++)
       {
         var clone = line.ToArray();
-        FillCells(clone, i, hint, CellValue.Filled);
+        FillCells(clone, i, hint.Count, CellValue.Filled);
 
-        GeneratePermutations(clone, i + hint + 1, new Queue<int>(hints));
+        GeneratePermutations(clone, i + hint.Count + 1, new Queue<Hint>(hints));
       }
     }
 

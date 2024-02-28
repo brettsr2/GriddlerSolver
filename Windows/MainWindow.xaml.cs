@@ -19,8 +19,8 @@ namespace Griddler_Solver
 
     private ProgressWindow? _ProgressWindow = null;
 
-    private Solver _Solver
-    { get; set; } = new Solver();
+    private Solver? _Solver
+    { get; set; }
 
     public MainWindow()
     {
@@ -29,12 +29,12 @@ namespace Griddler_Solver
       comboBoxUrl.Items.Add("https://www.griddlers.net/nonogram/-/g/183521");
       comboBoxUrl.Items.Add("https://www.griddlers.net/nonogram/-/g/276577");
       comboBoxUrl.Items.Add("https://www.griddlers.net/nonogram/-/g/276558");
+      comboBoxUrl.Items.Add("https://www.griddlers.net/nonogram/-/g/116627");
     }
-
     private void Draw()
     {
-      textBoxColCount.Text = _Solver.Cols.Length.ToString(); 
-      textBoxRowCount.Text = _Solver.Rows.Length.ToString();
+      textBoxColCount.Text = _Solver?.HintsColumnCount.ToString(); 
+      textBoxRowCount.Text = _Solver?.HintsRowCount.ToString();
 
       canvas.Children.Clear();
       _Solver?.Draw(canvas);
@@ -42,16 +42,13 @@ namespace Griddler_Solver
 
     private void OnSolve_Click(object sender, RoutedEventArgs e)
     {
-      Int32[][] rows = _Solver!.Rows!;
-      Int32[][] cols = _Solver!.Cols!;
-
       _ProgressWindow = new();
       _ProgressWindow.Show();
 
       Task.Run(() =>
       {
-        Nonogram nonogram = new Nonogram(rows, cols, this);
-        _Solver.Result = nonogram.Solve();
+        _Solver?.Solve(this);
+        //_Solver.Result = nonogram.Solve();
 
         Completed();
       });
@@ -59,8 +56,7 @@ namespace Griddler_Solver
 
     private void OnButtondDownload_Click(object sender, RoutedEventArgs e)
     {
-      _Solver = new Solver();
-      String url = _Solver.Url = comboBoxUrl.Text;
+      String url = comboBoxUrl.Text;
 
       HttpClient httpClient = new();
       String http = httpClient.GetStringAsync(url).Result;
@@ -69,7 +65,7 @@ namespace Griddler_Solver
       
       Int32 posBeg = http.IndexOf(title) + title.Length;
       Int32 posEnd = http.IndexOf("\"", posBeg);
-      _Solver.Name = http.Substring(posBeg, posEnd - posBeg);
+      String name = http.Substring(posBeg, posEnd - posBeg);
 
       Int32 pos = url.LastIndexOf('/') + 1;
       String id = url.Substring(pos);
@@ -96,7 +92,7 @@ namespace Griddler_Solver
         return;
       }
 
-      Action<Boolean, List<List<List<Int32>>>> parseJsonInput = (isRow, listItems) =>
+      static Hint[][] ParseJsonInput(List<List<List<int>>> listItems)
       {
         Hint[][] hints = new Hint[listItems.Count][];
         for (Int32 index = 0; index < listItems.Count; index++)
@@ -111,28 +107,27 @@ namespace Griddler_Solver
           hints[index] = listHint.ToArray();
         }
 
-        if (isRow)
-        {
-          _Solver.HintsRow = hints;
-        }
-        else
-        {
-          _Solver.HintsColumn = hints;
-        }
+        return hints;
+      }
+
+      var hintsRow = ParseJsonInput(jsonPuzzle.leftHeader);
+      var hintsColumn= ParseJsonInput(jsonPuzzle.topHeader);
+      _Solver = new Solver(hintsRow, hintsColumn)
+      {
+        Name = name,
+        Url = url,
+        ListColors = jsonPuzzle.GetListSolidColorBrush()
       };
-
-      parseJsonInput(true, jsonPuzzle.leftHeader);
-      parseJsonInput(false, jsonPuzzle.topHeader);
-
-      _Solver.ListColors = jsonPuzzle.GetListSolidColorBrush();
 
       Draw();
     }
     private void OnButtonSave_Click(object sender, RoutedEventArgs e)
     {
-      SaveFileDialog fileDialog = new();
-      fileDialog.Filter = _FileDialogFilter;
-      fileDialog.FileName = _Solver.Name + ".json";
+      SaveFileDialog fileDialog = new()
+      {
+        Filter = _FileDialogFilter,
+        FileName = _Solver?.Name + ".json"
+      };
 
       if (fileDialog.ShowDialog() == true)
       {
@@ -167,7 +162,7 @@ namespace Griddler_Solver
 
     private void OnComboBoxUrl_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-      _Solver = new Solver();
+      _Solver = null;
       Draw();
     }
 

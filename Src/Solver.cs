@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -10,58 +12,53 @@ namespace Griddler_Solver
 {
   internal class Solver
   {
+    public class SolveResult
+    {
+      public bool IsSolved { get; set; }
+      public CellValue[][]? Result { get; set; }
+      public TimeSpan TimeTaken { get; set; }
+      public int Iterations { get; set; }
+    }
+
     private SolidColorBrush _BrushGrey = new(Colors.Gray);
     private SolidColorBrush _BrushBlack = new(Colors.Black);
 
     private Double _CellSize = 15;
 
-    private Int32 _MaxRowItemsCount
+    private CellValue[,] _Board;
+    private readonly Hint[][] _HintsRow;
+    private readonly Hint[][] _HintsColumn;
+    private IProgress? _IProgress = null;
+
+    private LineSolver _LineSolver;
+
+    private Int32 _MaxHintsCountRow
     {
       get
       {
-        return GetMaxItemCount(HintsRow);
+        return GetMaxItemCount(_HintsRow);
       }
     }
-    private Int32 _MaxColItemsCount
+    private Int32 _MaxHintsCountColumn
     {
       get
       {
-        return GetMaxItemCount(HintsColumn);
+        return GetMaxItemCount(_HintsColumn);
       }
     }
 
-    private Int32 HintsRowCount
+    public Int32 HintsRowCount
     {
       get
       {
-        return HintsRow.Length;
+        return _HintsRow.Length;
       }
     }
-    private Int32 HintsColumnCount
+    public Int32 HintsColumnCount
     {
       get
       {
-        return HintsColumn.Length;
-      }
-    }
-
-    public Hint[][] HintsRow
-    { get; set; } = Array.Empty<Hint[]>();
-    public Hint[][] HintsColumn
-    { get; set; } = Array.Empty<Hint[]>();
-
-    public Int32[][] Rows
-    {
-      get
-      {
-        return GetHints(HintsRow);
-      }
-    }
-    public Int32[][] Cols
-    {
-      get
-      {
-        return GetHints(HintsColumn);
+        return _HintsColumn.Length;
       }
     }
 
@@ -70,8 +67,216 @@ namespace Griddler_Solver
     public String Name
     { get; set; } = String.Empty;
 
-    public Nonogram.NonogramSolveResult Result
+    public SolveResult Result
     { get; set; } = new();
+
+    public Solver()
+    {
+    }
+
+    public Solver(Hint[][] hintsRow, Hint[][] hintsColumn)
+    {
+      _HintsRow = hintsRow;
+      _HintsColumn = hintsColumn;
+
+      _Board = new CellValue[HintsRowCount, HintsColumnCount];
+      for (int row = 0; row < HintsRowCount; row++)
+      {
+        for (int col = 0; col < HintsColumnCount; col++)
+        {
+          _Board[row, col] = CellValue.Unknown;
+        }
+      }
+
+
+      _LineSolver = new LineSolver();
+    }
+
+    public void Solve(IProgress progress)
+    {
+      _IProgress = progress;
+
+      _IProgress?.AddMessage("Start");
+
+      Boolean hasChanged = true;
+      Int32 iteration = 0;
+
+      Stopwatch stopWatchGlobal = new();
+      stopWatchGlobal.Start();
+
+      while (hasChanged)
+      {
+        Stopwatch stopWatchIteration = new();
+        stopWatchIteration.Start();
+
+        iteration++;
+        UInt64 generatedPermutations = 0;
+
+        hasChanged = false;
+
+        for (Int32 row = 0; row < HintsRowCount; row++)
+        {
+          var currentRow = GetRow(row);
+          var updatedRow = _LineSolver.Solve(GetRow(row), _HintsRow[row]);
+          generatedPermutations += _LineSolver.GeneratedPermutations;
+
+          bool hasLineChanged = !currentRow.SequenceEqual(updatedRow);
+
+          if (hasLineChanged)
+          {
+            ReplaceRow(row, updatedRow);
+            hasChanged = true;
+          }
+        }
+
+        for (Int32 col = 0; col < HintsColumnCount; col++)
+        {
+          var currentColumn = GetColumn(col);
+          var updatedColumn = _LineSolver.Solve(GetColumn(col), _HintsColumn[col]);
+          generatedPermutations += _LineSolver.GeneratedPermutations;
+
+          bool hasLineChanged = !currentColumn.SequenceEqual(updatedColumn);
+
+          if (hasLineChanged)
+          {
+            ReplaceColumn(col, updatedColumn);
+            hasChanged = true;
+          }
+        }
+
+        stopWatchIteration.Stop();
+        PrintIterationStatistic(iteration, generatedPermutations, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
+      }
+
+      stopWatchGlobal.Stop();
+      Result = new SolveResult
+      {
+        IsSolved = IsSolved(),
+        Result = Convert(),
+        Iterations = iteration,
+        TimeTaken = stopWatchGlobal.Elapsed,
+      };
+    }
+
+    private void PrintIterationStatistic(Int32 iteration, UInt64 generatedPermutations, TimeSpan globalElapsed, TimeSpan iterationElapsed)
+    {
+      Int32 unknownCount = 0, blankCount = 0, filledCount = 0;
+
+      for (Int32 row = 0; row < HintsRowCount; row++)
+      {
+        for (Int32 col = 0; col < HintsColumnCount; col++)
+        {
+          if (_Board[row, col] == CellValue.Unknown)
+          {
+            unknownCount++;
+          }
+          else if (_Board[row, col] == CellValue.Blank)
+          {
+            blankCount++;
+          }
+          else if (_Board[row, col] == CellValue.Filled)
+          {
+            filledCount++;
+          }
+        }
+      }
+
+      Int32 total = HintsRowCount * HintsColumnCount;
+      Int32 percentUnknown = unknownCount * 100 / total;
+
+      const String timeFormat = @"mm\:ss";
+      String remainingTime = "N/A";
+
+      if (percentUnknown < 100)
+      {
+        Int32 percentDone = 100 - percentUnknown;
+        Double percentDonePerSecond = globalElapsed.TotalSeconds / (100 - percentUnknown);
+        Double remainingSeconds = percentDonePerSecond * 100 - globalElapsed.TotalSeconds;
+        remainingTime = new TimeSpan(0, 0, (Int32)remainingSeconds).ToString(timeFormat);
+      }
+
+      StringBuilder stringBuilder = new StringBuilder();
+      stringBuilder.Append($"[{globalElapsed.ToString(timeFormat)}]");
+      stringBuilder.Append($"[{iteration}]");
+      stringBuilder.Append($"[{iterationElapsed.ToString(timeFormat)}]");
+      stringBuilder.Append($" Cells: {total} Unknown: {unknownCount} ({percentUnknown}%) Blank: {blankCount} Filled: {filledCount}");
+      stringBuilder.Append($" Permutations: {generatedPermutations}");
+      stringBuilder.Append($" remaining time: {remainingTime}");
+
+      _IProgress?.AddMessage(stringBuilder.ToString());
+    }
+
+    private CellValue[][] Convert()
+    {
+      CellValue[][] board = new CellValue[HintsRowCount][];
+
+      for (Int32 row = 0; row < HintsRowCount; row++)
+      {
+        board[row] = GetRow(row);
+        //board[row] = new CellValue[HintsColumnCount];
+        //for (Int32 column = 0; column < HintsColumnCount; column++)
+        {
+          //board[row][column] = _Board[row, column];
+        }
+      }
+
+      return board;
+    }
+
+    private Boolean IsSolved()
+    {
+      for (Int32 row = 0; row < HintsRowCount; row++)
+      {
+        for (Int32 col = 0; col < HintsColumnCount; col++)
+        {
+          if (_Board[row, col] == CellValue.Unknown)
+          {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+    private CellValue[] GetColumn(Int32 colIdx)
+    {
+      CellValue[] column = new CellValue[HintsRowCount];
+
+      for (int row = 0; row < column.Length; row++)
+      {
+        column[row] = _Board[row, colIdx];
+      }
+
+      return column;
+    }
+
+    private CellValue[] GetRow(Int32 indexRow)
+    {
+      CellValue[] row = new CellValue[HintsColumnCount];
+
+      for (Int32 column = 0; column < row.Length; column++)
+      {
+        row[column] = _Board[indexRow, column];
+      }
+
+      return row;
+    }
+
+    private void ReplaceColumn(Int32 indexColumn, CellValue[] column)
+    {
+      for (Int32 row = 0; row < column.Length; row++)
+      {
+        _Board[row, indexColumn] = column[row];
+      }
+    }
+
+    private void ReplaceRow(Int32 indexRow, CellValue[] row)
+    {
+      for (Int32 column = 0; column < row.Length; column++)
+      {
+        _Board[indexRow, column] = row[column];
+      }
+    }
 
     private Int32[][] GetHints(Hint[][] list)
     {
@@ -105,9 +310,11 @@ namespace Griddler_Solver
 
     public void Draw(Canvas canvas)
     {
+      //return;
+
       if (HintsRowCount != 0 && HintsColumnCount != 0)
       {
-        _CellSize = Math.Min(canvas.ActualHeight / (_MaxColItemsCount + HintsRowCount), canvas.ActualWidth / (_MaxRowItemsCount + HintsColumnCount));
+        _CellSize = Math.Min(canvas.ActualHeight / (_MaxHintsCountColumn + HintsRowCount), canvas.ActualWidth / (_MaxHintsCountRow + HintsColumnCount));
       }
       Double FontSize = _CellSize * 0.8;
 
@@ -160,11 +367,11 @@ namespace Griddler_Solver
 
       Double currentX, currentY;
 
-      currentX = _MaxRowItemsCount * _CellSize;
+      currentX = _MaxHintsCountRow * _CellSize;
       for (Int32 col = 0; col < HintsColumnCount; col++)
       {
-        Hint[] list = HintsColumn[col];
-        currentY = (_MaxColItemsCount - list.Length) * _CellSize;
+        Hint[] list = _HintsColumn[col];
+        currentY = (_MaxHintsCountColumn - list.Length) * _CellSize;
 
         foreach (Hint hint in list)
         {
@@ -177,11 +384,11 @@ namespace Griddler_Solver
         currentX += _CellSize;
       }
 
-      currentY = _MaxColItemsCount  * _CellSize;
+      currentY = _MaxHintsCountColumn  * _CellSize;
       for (Int32 row = 0; row < HintsRowCount; row++)
       {
-        Hint[] list = HintsRow[row];
-        currentX = (_MaxRowItemsCount - list.Length) * _CellSize;
+        Hint[] list = _HintsRow[row];
+        currentX = (_MaxHintsCountRow - list.Length) * _CellSize;
 
         foreach (Hint hint in list)
         {
@@ -195,8 +402,8 @@ namespace Griddler_Solver
 
       if (Result?.IsSolved == true)
       {
-        currentX = _MaxRowItemsCount * _CellSize;
-        currentY = _MaxColItemsCount * _CellSize;
+        currentX = _MaxHintsCountRow * _CellSize;
+        currentY = _MaxHintsCountColumn * _CellSize;
 
         for (Int32 row = 0; row <= HintsRowCount; row++)
         {
@@ -235,7 +442,7 @@ namespace Griddler_Solver
         {
           for (Int32 row = 0; row < HintsRowCount; row++)
           {
-            if (Result.Result?[row][col] == 1)
+            if (Result.Result?[row][col] == CellValue.Filled)
             {
               Double x = currentX + col * _CellSize;
               Double y = currentY + row * _CellSize;
