@@ -26,6 +26,7 @@ namespace Griddler_Solver
     {
       InitializeComponent();
 
+      comboBoxUrl.Items.Add("https://www.griddlers.net/nonogram/-/g/214368");
       comboBoxUrl.Items.Add("https://www.griddlers.net/nonogram/-/g/183521");
       comboBoxUrl.Items.Add("https://www.griddlers.net/nonogram/-/g/276577");
       comboBoxUrl.Items.Add("https://www.griddlers.net/nonogram/-/g/276558");

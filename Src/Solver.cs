@@ -90,13 +90,43 @@ namespace Griddler_Solver
       _IProgress?.AddMessage("Start");
 
       _Board = new CellValue[HintsRowCount, HintsColumnCount];
-      for (int row = 0; row < HintsRowCount; row++)
+      
+      for (Int32 row = 0; row < HintsRowCount; row++)
       {
-        for (int col = 0; col < HintsColumnCount; col++)
+        for (Int32 col = 0; col < HintsColumnCount; col++)
         {
           _Board[row, col] = CellValue.Unknown;
         }
       }
+
+      static Int32 CalculateScore(Hint[] hints)
+      {
+        return hints.Length + hints.Sum(hint => hint.Count * 2);
+      }
+
+      List<SolverLine> listSolverLine = [];
+      for (Int32 row = 0; row < HintsRowCount; row++)
+      {
+        listSolverLine.Add(new SolverLine()
+        {
+          Index = row,
+          IsRow = true,
+          Score = CalculateScore(HintsRow[row])
+        });
+      }
+      for (Int32 column = 0; column < HintsColumnCount; column++)
+      {
+        listSolverLine.Add(new SolverLine()
+        {
+          Index = column,
+          IsRow = false,
+          Score = CalculateScore(HintsColumn[column])
+        });
+      }
+      listSolverLine.Sort(delegate (SolverLine line1, SolverLine line2)
+      {
+        return -line1.Score.CompareTo(line2.Score);
+      });
 
       Break = false;
       Boolean hasChanged = true;
@@ -115,42 +145,39 @@ namespace Griddler_Solver
 
         hasChanged = false;
 
-        for (Int32 row = 0; row < HintsRowCount; row++)
+        foreach (SolverLine solverLine in listSolverLine)
         {
           if (Break)
           {
             break;
           }
 
-          var currentRow = GetRow(row);
-          var updatedRow = _LineSolver.Solve(GetRow(row), HintsRow[row]);
-          generatedPermutations += _LineSolver.GeneratedPermutations;
+          CellValue[] currentLine, updatedLine;
 
-          bool hasLineChanged = !currentRow.SequenceEqual(updatedRow);
-
-          if (hasLineChanged)
+          if (solverLine.IsRow)
           {
-            ReplaceRow(row, updatedRow);
-            hasChanged = true;
+            currentLine = GetRow(solverLine.Index);
+            updatedLine = _LineSolver.Solve(GetRow(solverLine.Index), HintsRow[solverLine.Index]);
           }
-        }
-
-        for (Int32 col = 0; col < HintsColumnCount; col++)
-        {
-          if (Break)
+          else
           {
-            break;
+            currentLine = GetColumn(solverLine.Index);
+            updatedLine = _LineSolver.Solve(GetColumn(solverLine.Index), HintsColumn[solverLine.Index]);
+
           }
 
-          var currentColumn = GetColumn(col);
-          var updatedColumn = _LineSolver.Solve(GetColumn(col), HintsColumn[col]);
           generatedPermutations += _LineSolver.GeneratedPermutations;
-
-          bool hasLineChanged = !currentColumn.SequenceEqual(updatedColumn);
-
+          bool hasLineChanged = !currentLine.SequenceEqual(updatedLine);
           if (hasLineChanged)
           {
-            ReplaceColumn(col, updatedColumn);
+            if (solverLine.IsRow)
+            {
+              ReplaceRow(solverLine.Index, updatedLine);
+            }
+            else
+            {
+              ReplaceColumn(solverLine.Index, updatedLine);
+            }
             hasChanged = true;
           }
         }
