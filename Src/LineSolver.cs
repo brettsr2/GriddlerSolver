@@ -37,7 +37,7 @@ namespace Griddler_Solver
       var clone = line.ToArray();
 
       // If line is empty
-      if (hints.Length <= 1 && hints[0].IsBackground)
+      if (hints.Length == 0)
       {
         FillEmptyCells(clone);
         return clone;

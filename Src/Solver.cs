@@ -163,7 +163,6 @@ namespace Griddler_Solver
           {
             currentLine = GetColumn(solverLine.Index);
             updatedLine = _LineSolver.Solve(GetColumn(solverLine.Index), HintsColumn[solverLine.Index]);
-
           }
 
           generatedPermutations += _LineSolver.GeneratedPermutations;
@@ -435,6 +434,17 @@ namespace Griddler_Solver
         currentX = _MaxHintsCountRow * _CellSize;
         currentY = _MaxHintsCountColumn * _CellSize;
 
+        for (Int32 col = 0; col < HintsColumnCount; col++)
+        {
+          for (Int32 row = 0; row < HintsRowCount; row++)
+          {
+            CellValue? value = Result.Result?[row][col];
+            Double x = currentX + col * _CellSize;
+            Double y = currentY + row * _CellSize;
+            createRectangle(x, y, ListColors[(Int32)value + 1].ColorBrush);
+          }
+        }
+
         for (Int32 row = 0; row <= HintsRowCount; row++)
         {
           Double x2 = currentX + HintsColumnCount * _CellSize;
@@ -466,19 +476,6 @@ namespace Griddler_Solver
           }
 
           createLine(x, currentY, x, y2, thickness, brush);
-        }
-
-        for (Int32 col = 0; col < HintsColumnCount; col++)
-        {
-          for (Int32 row = 0; row < HintsRowCount; row++)
-          {
-            if (Result.Result?[row][col] == CellValue.Filled)
-            {
-              Double x = currentX + col * _CellSize;
-              Double y = currentY + row * _CellSize;
-              createRectangle(x, y, _BrushBlack);
-            }
-          }
         }
       }
     }
