@@ -26,11 +26,11 @@ namespace Griddler_Solver
     {
       InitializeComponent();
 
-      comboBoxUrl.Items.Add("https://www.griddlers.net/nonogram/-/g/214368");
-      comboBoxUrl.Items.Add("https://www.griddlers.net/nonogram/-/g/183521");
-      comboBoxUrl.Items.Add("https://www.griddlers.net/nonogram/-/g/276577");
-      comboBoxUrl.Items.Add("https://www.griddlers.net/nonogram/-/g/276558");
-      comboBoxUrl.Items.Add("https://www.griddlers.net/nonogram/-/g/116627");
+      comboBoxUrl.Items.Add("Snoopy 20x15x2 517 | https://www.griddlers.net/nonogram/-/g/183521");
+      comboBoxUrl.Items.Add("Unicorn [35x40x2] 178714 | https://www.griddlers.net/nonogram/-/g/276577");
+      comboBoxUrl.Items.Add("In the Countryside [50x50x2] ~0.7M | https://www.griddlers.net/nonogram/-/g/275956");
+      comboBoxUrl.Items.Add("Family portrait [40x40x2] ~1.1M | https://www.griddlers.net/nonogram/-/g/276558");
+      comboBoxUrl.Items.Add("Boat [50x50x2] ~21M | https://www.griddlers.net/nonogram/-/g/116627");
     }
     private void Draw()
     {
@@ -64,7 +64,8 @@ namespace Griddler_Solver
 
     private void OnButtonDownload_Click(object sender, RoutedEventArgs e)
     {
-      String url = comboBoxUrl.Text;
+      String[] split = comboBoxUrl.Text.Split('|');
+      String url = split.Length == 1 ? split[0].Trim() : split[1].Trim();
 
       HttpClient httpClient = new();
       String http = httpClient.GetStringAsync(url).Result;
@@ -199,7 +200,7 @@ namespace Griddler_Solver
     }
     public void ProgressWindowClosed()
     {
-      _Solver.Break = true;
+      _Solver.Config.Break = true;
     }
   }
 }

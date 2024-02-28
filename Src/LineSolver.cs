@@ -14,6 +14,9 @@ namespace Griddler_Solver
 
   class LineSolver
   {
+    public Config Config
+    { get; set; } = new Config();
+
     public UInt64 GeneratedPermutations
     { get; set; }
 
@@ -53,6 +56,11 @@ namespace Griddler_Solver
         GeneratedPermutations = Convert.ToUInt64(_CurrentLinePermutations.Count);
       }
 
+      if (Config.Break)
+      {
+        return clone;
+      }
+
       Merge(clone, _CurrentLinePermutations);
       return clone;
     }
@@ -74,11 +82,21 @@ namespace Griddler_Solver
 
     private void GeneratePermutations(CellValue[] lineOrigin, Hint[] hints)
     {
+      if (Config.Break)
+      {
+        return;
+      }
+
       CellValue[] line = new CellValue[lineOrigin.Length];
       GeneratePermutations(lineOrigin, line, 0, new Queue<Hint>(hints));
     }
     private void GeneratePermutations(CellValue[] lineOrigin, CellValue[] line, int startIdx, Queue<Hint> hints)
     {
+      if (Config.Break)
+      {
+        return;
+      }
+
       if (hints.Count == 0)
       {
         FillEmptyCells(line);

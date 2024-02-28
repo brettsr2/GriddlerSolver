@@ -5,6 +5,9 @@ namespace Griddler_Solver
 {
   internal class SolverLine
   {
+    public Config Config
+    { get; set; } = new Config();
+
     public Int32 Index
     { get; set; }
     public Int32 Number
@@ -34,6 +37,8 @@ namespace Griddler_Solver
 
     public Boolean Solve()
     {
+      LineSolver.Config = Config;
+
       CellValue[] currentLine, updatedLine;
 
       if (IsRow)

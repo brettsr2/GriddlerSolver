@@ -56,8 +56,8 @@ namespace Griddler_Solver
     #region solving
     private IProgress? _IProgress = null;
     [JsonIgnore]
-    public Boolean Break
-    { get; set; } = false;
+    public Config Config
+    { get; set; } = new();
     public SolverResult Result
     { get; set; } = new();
     #endregion // solving
@@ -288,22 +288,29 @@ namespace Griddler_Solver
         return hints.Length + hints.Sum(hint => hint.Count * 2);
       }
 
+      Config = new Config()
+      {
+        Name = Name,
+      };
+
       List<SolverLine> listSolverLine = [];
       for (Int32 row = 0; row < Board.HintsRowCount; row++)
       {
         listSolverLine.Add(new SolverLine()
         {
+          Config = Config,
           Index = row,
           IsRow = true,
           Score = CalculateScore(Board.HintsRow[row]),
           Board = Board,
           Hints = Board.HintsRow[row],
-        }); ;
+        });
       }
       for (Int32 column = 0; column < Board.HintsColumnCount; column++)
       {
         listSolverLine.Add(new SolverLine()
         {
+          Config = Config,
           Index = column,
           IsRow = false,
           Score = CalculateScore(Board.HintsColumn[column]),
@@ -316,7 +323,6 @@ namespace Griddler_Solver
         return -line1.Score.CompareTo(line2.Score);
       });
 
-      Break = false;
       Boolean hasChanged = true;
       Int32 iteration = 0;
 
@@ -324,7 +330,7 @@ namespace Griddler_Solver
 
       while (!Board.IsSolved())
       {
-        if (Break)
+        if (Config.Break)
         {
           break;
         }
@@ -341,7 +347,7 @@ namespace Griddler_Solver
 
         Parallel.ForEach(listSolverLine, solverLine =>
         {
-          if (Break)
+          if (Config.Break)
           {
             return;
           }
