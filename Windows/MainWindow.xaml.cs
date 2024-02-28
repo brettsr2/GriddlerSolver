@@ -34,7 +34,17 @@ namespace Griddler_Solver
     }
     private void Draw()
     {
-      label.Content = $"{_Solver.Name}{Environment.NewLine}[{_Solver.HintsRowCount},{_Solver.HintsColumnCount}]";
+      StringBuilder stringBuilder = new StringBuilder();
+
+      stringBuilder.AppendLine($"{_Solver.Name}");
+      stringBuilder.AppendLine($"[{_Solver.Board.HintsRowCount},{_Solver.Board.HintsColumnCount}]");
+      if (_Solver.Result.IsSolved)
+      {
+        stringBuilder.AppendLine($"{_Solver.Result.Iterations}");
+        stringBuilder.AppendLine($"{_Solver.Result.TimeTaken.ToString(Solver.TimeFormat)}");
+      }
+
+      label.Content = stringBuilder.ToString();
 
       canvas.Children.Clear();
       _Solver.Draw(canvas);
@@ -179,7 +189,7 @@ namespace Griddler_Solver
     {
       Dispatcher.Invoke(new Action(() =>
       {
-        AddMessage($"Iterations: {_Solver.Result.Iterations}, Time elapsed: {_Solver.Result.TimeTaken.ToString(@"mm\:ss\.ff")}");
+        AddMessage($"Iterations: {_Solver.Result.Iterations}, Time elapsed: {_Solver.Result.TimeTaken.ToString(Solver.TimeFormat)}");
 
         if (!_Solver.Break)
         {

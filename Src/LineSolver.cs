@@ -17,34 +17,41 @@ namespace Griddler_Solver
     public UInt64 GeneratedPermutations
     { get; set; }
 
-    private readonly IList<CellValue[]> _CurrentLinePermutations;
-
-    public LineSolver()
-    {
-      _CurrentLinePermutations = new List<CellValue[]>();
-    }
+    private List<CellValue[]> _CurrentLinePermutations = [];
 
     public CellValue[] Solve(CellValue[] line, Hint[] hints)
     {
-      _CurrentLinePermutations.Clear();
-      GeneratedPermutations = 0;
-
       if (IsLineFull(line))
       {
         return line;
       }
 
       var clone = line.ToArray();
-
-      // If line is empty
       if (hints.Length == 0)
       {
         FillEmptyCells(clone);
         return clone;
       }
 
-      GeneratePermutations(line, hints);
-      GeneratedPermutations = Convert.ToUInt64(_CurrentLinePermutations.Count);
+      if (_CurrentLinePermutations.Count == 0)
+      {
+        GeneratePermutations(line, hints);
+        GeneratedPermutations = Convert.ToUInt64(_CurrentLinePermutations.Count);
+      }
+      else
+      {
+        List<CellValue[]> newCurrent = new List<CellValue[]>(_CurrentLinePermutations.Count);
+        foreach (var permutation in _CurrentLinePermutations)
+        {
+          if (IsPermutationValid(line, permutation))
+          {
+            newCurrent.Add(permutation);
+          }
+        }
+
+        _CurrentLinePermutations = newCurrent;
+        GeneratedPermutations = Convert.ToUInt64(_CurrentLinePermutations.Count);
+      }
 
       Merge(clone, _CurrentLinePermutations);
       return clone;
@@ -68,23 +75,14 @@ namespace Griddler_Solver
     private void GeneratePermutations(CellValue[] lineOrigin, Hint[] hints)
     {
       CellValue[] line = new CellValue[lineOrigin.Length];
-      for (Int32 index = 0; index < lineOrigin.Length; index++)
-      {
-        line[index] = CellValue.Unknown;
-      }
-
       GeneratePermutations(lineOrigin, line, 0, new Queue<Hint>(hints));
     }
-
     private void GeneratePermutations(CellValue[] lineOrigin, CellValue[] line, int startIdx, Queue<Hint> hints)
     {
-      if (!hints.Any())
+      if (hints.Count == 0)
       {
         FillEmptyCells(line);
-        if (IsPermutationValid(lineOrigin, line))
-        {
-          _CurrentLinePermutations.Add(line.ToArray());
-        }
+        _CurrentLinePermutations.Add(line.ToArray());
 
         return;
       }
@@ -138,7 +136,6 @@ namespace Griddler_Solver
         }
       }
     }
-
     private void FillCells(CellValue[] line, Int32 indexStart, Int32 numberOfCells, CellValue value)
     {
       Debug.Assert(numberOfCells > 0);
