@@ -1,14 +1,20 @@
-﻿using System;
-using System.Text;
-using System.Windows;
+﻿using System.Windows;
 
 namespace Griddler_Solver.Windows
 {
-    public partial class ProgressWindow : Window
+  partial class ProgressWindow : Window
+  {
+    IProgress? _Progress = null;
+
+    internal ProgressWindow(IProgress progress)
     {
-        public ProgressWindow()
-        {
-            InitializeComponent();
-        }
+      _Progress = progress;
+      InitializeComponent();
     }
+
+    private void Window_Closed(object sender, System.EventArgs e)
+    {
+      _Progress?.ProgressWindowClosed();
+    }
+  }
 }

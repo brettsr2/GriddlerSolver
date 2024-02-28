@@ -6,5 +6,6 @@ namespace Griddler_Solver
   {
     public abstract void AddMessage(String message);
     public abstract void Completed();
+    public abstract void ProgressWindowClosed();
   }
 }

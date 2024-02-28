@@ -67,6 +67,8 @@ namespace Griddler_Solver
 
     #region solving
     private IProgress? _IProgress = null;
+    public Boolean Break
+    { get; set; } = false;
     private LineSolver _LineSolver = new();
     public SolverResult Result
     { get; set; } = new();
@@ -96,6 +98,7 @@ namespace Griddler_Solver
         }
       }
 
+      Break = false;
       Boolean hasChanged = true;
       Int32 iteration = 0;
 
@@ -114,6 +117,11 @@ namespace Griddler_Solver
 
         for (Int32 row = 0; row < HintsRowCount; row++)
         {
+          if (Break)
+          {
+            break;
+          }
+
           var currentRow = GetRow(row);
           var updatedRow = _LineSolver.Solve(GetRow(row), HintsRow[row]);
           generatedPermutations += _LineSolver.GeneratedPermutations;
@@ -129,6 +137,11 @@ namespace Griddler_Solver
 
         for (Int32 col = 0; col < HintsColumnCount; col++)
         {
+          if (Break)
+          {
+            break;
+          }
+
           var currentColumn = GetColumn(col);
           var updatedColumn = _LineSolver.Solve(GetColumn(col), HintsColumn[col]);
           generatedPermutations += _LineSolver.GeneratedPermutations;

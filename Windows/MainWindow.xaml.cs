@@ -33,7 +33,7 @@ namespace Griddler_Solver
     }
     private void Draw()
     {
-      label.Content = $"[{_Solver.HintsRowCount},{_Solver.HintsColumnCount}]{Environment.NewLine}{_Solver.Name}";
+      label.Content = $"{_Solver.Name}{Environment.NewLine}[{_Solver.HintsRowCount},{_Solver.HintsColumnCount}]";
 
       canvas.Children.Clear();
       _Solver.Draw(canvas);
@@ -41,7 +41,7 @@ namespace Griddler_Solver
 
     private void OnSolve_Click(object sender, RoutedEventArgs e)
     {
-      _ProgressWindow = new();
+      _ProgressWindow = new(this);
       _ProgressWindow.Show();
 
       Task.Run(() =>
@@ -180,13 +180,20 @@ namespace Griddler_Solver
       {
         AddMessage($"Iterations: {_Solver.Result.Iterations}, Time elapsed: {_Solver.Result.TimeTaken.ToString(@"mm\:ss\.ff")}");
 
-        MessageBox.Show("Done", String.Empty, MessageBoxButton.OK, MessageBoxImage.Information);
+        if (!_Solver.Break)
+        {
+          MessageBox.Show("Done", String.Empty, MessageBoxButton.OK, MessageBoxImage.Information);
+        }
 
         _ProgressWindow?.Close();
         _ProgressWindow = null;
 
         Draw();
       }));
+    }
+    public void ProgressWindowClosed()
+    {
+      _Solver.Break = true;
     }
   }
 }
