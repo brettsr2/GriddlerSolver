@@ -317,32 +317,46 @@ namespace Griddler_Solver
       Boolean hasChanged = true;
       Int32 iteration = 0;
 
-      Stopwatch stopWatchGlobal = new();
-      stopWatchGlobal.Start();
+      Stopwatch stopWatchGlobal = Stopwatch.StartNew();
 
       while (hasChanged)
       {
-        Stopwatch stopWatchIteration = new();
-        stopWatchIteration.Start();
-
+        Stopwatch stopWatchIteration = Stopwatch.StartNew();
+        
         iteration++;
         UInt64 generatedPermutations = 0;
 
         hasChanged = false;
 
-        foreach (SolverLine solverLine in listSolverLine)
+        DateTime dateTime = DateTime.Now;
+        Int32 dateTimeOfIteration = 0;
+
+        for (Int32 index = 0; index < listSolverLine.Count; index++) 
         {
           if (Break)
           {
             break;
           }
 
+          SolverLine solverLine = listSolverLine[index];
+
           hasChanged |= solverLine.Solve();
           generatedPermutations += solverLine.LineSolver.GeneratedPermutations;
+
+          if ((DateTime.Now - dateTime).TotalSeconds > 5)
+          {
+            PrintIterationStatistic(iteration, generatedPermutations, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
+            
+            dateTime = DateTime.Now;
+            dateTimeOfIteration = iteration;
+          }
         }
 
         stopWatchIteration.Stop();
-        PrintIterationStatistic(iteration, generatedPermutations, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
+        if (dateTimeOfIteration != iteration || (DateTime.Now - dateTime).TotalSeconds > 1)
+        {
+          PrintIterationStatistic(iteration, generatedPermutations, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
+        }
       }
 
       stopWatchGlobal.Stop();

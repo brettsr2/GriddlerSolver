@@ -108,20 +108,27 @@ namespace Griddler_Solver
         return;
       }
 
-      for (int i = 0; i < line.Length; i++)
+      for (Int32 index = 0; index < line.Length; index++)
       {
-        if (line[i] != CellValue.Unknown)
+        if (line[index] != CellValue.Unknown)
         {
           continue;
         }
 
-        var value = permutations[0][i];
+        CellValue value = permutations[0][index];
 
-        bool allMatch = permutations.All(p => p[i] == value);
-
+        Boolean allMatch = true;
+        foreach (CellValue[] permutation in permutations)
+        {
+          if (permutation[index] != value)
+          {
+            allMatch = false;
+            break;
+          }
+        }
         if (allMatch)
         {
-          line[i] = value;
+          line[index] = value;
         }
       }
     }
