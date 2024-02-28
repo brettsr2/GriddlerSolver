@@ -19,8 +19,8 @@ namespace Griddler_Solver
 
     private ProgressWindow? _ProgressWindow = null;
 
-    private Solver? _Solver
-    { get; set; }
+    private Solver _Solver
+    { get; set; } = new();
 
     public MainWindow()
     {
@@ -33,10 +33,10 @@ namespace Griddler_Solver
     }
     private void Draw()
     {
-      label.Content = $"[{_Solver?.HintsRowCount},{_Solver?.HintsColumnCount}]{Environment.NewLine}{_Solver?.Name}";
+      label.Content = $"[{_Solver.HintsRowCount},{_Solver.HintsColumnCount}]{Environment.NewLine}{_Solver.Name}";
 
       canvas.Children.Clear();
-      _Solver?.Draw(canvas);
+      _Solver.Draw(canvas);
     }
 
     private void OnSolve_Click(object sender, RoutedEventArgs e)
@@ -46,7 +46,7 @@ namespace Griddler_Solver
 
       Task.Run(() =>
       {
-        _Solver?.Solve(this);
+        _Solver.Solve(this);
         Completed();
       });
     }
@@ -123,7 +123,7 @@ namespace Griddler_Solver
       SaveFileDialog fileDialog = new()
       {
         Filter = _FileDialogFilter,
-        FileName = _Solver?.Name + ".json"
+        FileName = _Solver.Name + ".json"
       };
 
       if (fileDialog.ShowDialog() == true)
@@ -159,7 +159,7 @@ namespace Griddler_Solver
 
     private void OnComboBoxUrl_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-      _Solver = null;
+      _Solver = new Solver();
       Draw();
     }
 
@@ -178,7 +178,7 @@ namespace Griddler_Solver
     {
       Dispatcher.Invoke(new Action(() =>
       {
-        AddMessage($"Iterations: {_Solver?.Result.Iterations}, Time elapsed: {_Solver?.Result.TimeTaken.ToString(@"mm\:ss\.ff")}");
+        AddMessage($"Iterations: {_Solver.Result.Iterations}, Time elapsed: {_Solver.Result.TimeTaken.ToString(@"mm\:ss\.ff")}");
 
         MessageBox.Show("Done", String.Empty, MessageBoxButton.OK, MessageBoxImage.Information);
 
