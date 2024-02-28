@@ -33,8 +33,7 @@ namespace Griddler_Solver
     }
     private void Draw()
     {
-      textBoxColCount.Text = _Solver?.HintsColumnCount.ToString(); 
-      textBoxRowCount.Text = _Solver?.HintsRowCount.ToString();
+      label.Content = $"[{_Solver?.HintsRowCount},{_Solver?.HintsColumnCount}]{Environment.NewLine}{_Solver?.Name}";
 
       canvas.Children.Clear();
       _Solver?.Draw(canvas);
@@ -48,13 +47,11 @@ namespace Griddler_Solver
       Task.Run(() =>
       {
         _Solver?.Solve(this);
-        //_Solver.Result = nonogram.Solve();
-
         Completed();
       });
     }
 
-    private void OnButtondDownload_Click(object sender, RoutedEventArgs e)
+    private void OnButtonDownload_Click(object sender, RoutedEventArgs e)
     {
       String url = comboBoxUrl.Text;
 
@@ -115,7 +112,7 @@ namespace Griddler_Solver
       _Solver = new Solver(hintsRow, hintsColumn)
       {
         Name = name,
-        Url = url,
+        Url = comboBoxUrl.Text,
         ListColors = jsonPuzzle.GetListSolidColorBrush()
       };
 

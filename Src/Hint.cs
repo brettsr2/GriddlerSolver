@@ -2,7 +2,7 @@
 
 namespace Griddler_Solver
 {
-  internal class Hint
+  class Hint
   {
     public static Int32 ColorBackground = 0;
     public static Hint DefinitionBackground = new Hint() { ColorId = ColorBackground, Count = 1 };

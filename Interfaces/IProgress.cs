@@ -2,7 +2,7 @@
 
 namespace Griddler_Solver
 {
-  internal interface IProgress
+  interface IProgress
   {
     public abstract void AddMessage(String message);
     public abstract void Completed();

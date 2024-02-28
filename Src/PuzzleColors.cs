@@ -7,7 +7,7 @@ using System.Windows.Media;
 
 namespace Griddler_Solver
 {
-  internal class PuzzleColors
+  class PuzzleColors
   {
     public String HexColor
     { get; set; } = String.Empty;

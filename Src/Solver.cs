@@ -10,65 +10,67 @@ using System.Windows.Shapes;
 
 namespace Griddler_Solver
 {
-  internal class Solver
+  class Solver
   {
-    public class SolveResult
-    {
-      public bool IsSolved { get; set; }
-      public CellValue[][]? Result { get; set; }
-      public TimeSpan TimeTaken { get; set; }
-      public int Iterations { get; set; }
-    }
+    #region data
+    public String Name
+    { get; set; } = String.Empty;
+    public String Url
+    { get; set; } = String.Empty;
 
-    private SolidColorBrush _BrushGrey = new(Colors.Gray);
-    private SolidColorBrush _BrushBlack = new(Colors.Black);
-
-    private Double _CellSize = 15;
-
-    private CellValue[,] _Board;
-    private readonly Hint[][] _HintsRow;
-    private readonly Hint[][] _HintsColumn;
-    private IProgress? _IProgress = null;
-
-    private LineSolver _LineSolver;
-
-    private Int32 _MaxHintsCountRow
-    {
-      get
-      {
-        return GetMaxItemCount(_HintsRow);
-      }
-    }
-    private Int32 _MaxHintsCountColumn
-    {
-      get
-      {
-        return GetMaxItemCount(_HintsColumn);
-      }
-    }
+    private CellValue[,] _Board = new CellValue[0,0];
+    public Hint[][] HintsRow
+    { get; set; } = Array.Empty<Hint[]>();
+    public Hint[][] HintsColumn
+    { get; set; } = Array.Empty<Hint[]>();
 
     public Int32 HintsRowCount
     {
       get
       {
-        return _HintsRow.Length;
+        return HintsRow.Length;
       }
     }
     public Int32 HintsColumnCount
     {
       get
       {
-        return _HintsColumn.Length;
+        return HintsColumn.Length;
+      }
+    }
+    #endregion // data
+
+    #region drawing
+    private SolidColorBrush _BrushGrey = new(Colors.Gray);
+    private SolidColorBrush _BrushBlack = new(Colors.Black);
+
+    private Int32 _MaxHintsCountRow
+    {
+      get
+      {
+        return GetMaxItemCount(HintsRow);
+      }
+    }
+    private Int32 _MaxHintsCountColumn
+    {
+      get
+      {
+        return GetMaxItemCount(HintsColumn);
       }
     }
 
-    public String Url
-    { get; set; } = String.Empty;
-    public String Name
-    { get; set; } = String.Empty;
+    private Double _CellSize = 15;
 
-    public SolveResult Result
+    public List<PuzzleColors> ListColors
+    { get; set; } = [];
+    #endregion // drawing
+
+    #region solving
+    private IProgress? _IProgress = null;
+    private LineSolver _LineSolver = new();
+    public SolverResult Result
     { get; set; } = new();
+    #endregion // solving
 
     public Solver()
     {
@@ -76,8 +78,14 @@ namespace Griddler_Solver
 
     public Solver(Hint[][] hintsRow, Hint[][] hintsColumn)
     {
-      _HintsRow = hintsRow;
-      _HintsColumn = hintsColumn;
+      HintsRow = hintsRow;
+      HintsColumn = hintsColumn;
+    }
+
+    public void Solve(IProgress progress)
+    {
+      _IProgress = progress;
+      _IProgress?.AddMessage("Start");
 
       _Board = new CellValue[HintsRowCount, HintsColumnCount];
       for (int row = 0; row < HintsRowCount; row++)
@@ -87,16 +95,6 @@ namespace Griddler_Solver
           _Board[row, col] = CellValue.Unknown;
         }
       }
-
-
-      _LineSolver = new LineSolver();
-    }
-
-    public void Solve(IProgress progress)
-    {
-      _IProgress = progress;
-
-      _IProgress?.AddMessage("Start");
 
       Boolean hasChanged = true;
       Int32 iteration = 0;
@@ -117,7 +115,7 @@ namespace Griddler_Solver
         for (Int32 row = 0; row < HintsRowCount; row++)
         {
           var currentRow = GetRow(row);
-          var updatedRow = _LineSolver.Solve(GetRow(row), _HintsRow[row]);
+          var updatedRow = _LineSolver.Solve(GetRow(row), HintsRow[row]);
           generatedPermutations += _LineSolver.GeneratedPermutations;
 
           bool hasLineChanged = !currentRow.SequenceEqual(updatedRow);
@@ -132,7 +130,7 @@ namespace Griddler_Solver
         for (Int32 col = 0; col < HintsColumnCount; col++)
         {
           var currentColumn = GetColumn(col);
-          var updatedColumn = _LineSolver.Solve(GetColumn(col), _HintsColumn[col]);
+          var updatedColumn = _LineSolver.Solve(GetColumn(col), HintsColumn[col]);
           generatedPermutations += _LineSolver.GeneratedPermutations;
 
           bool hasLineChanged = !currentColumn.SequenceEqual(updatedColumn);
@@ -149,7 +147,7 @@ namespace Griddler_Solver
       }
 
       stopWatchGlobal.Stop();
-      Result = new SolveResult
+      Result = new SolverResult
       {
         IsSolved = IsSolved(),
         Result = Convert(),
@@ -213,11 +211,6 @@ namespace Griddler_Solver
       for (Int32 row = 0; row < HintsRowCount; row++)
       {
         board[row] = GetRow(row);
-        //board[row] = new CellValue[HintsColumnCount];
-        //for (Int32 column = 0; column < HintsColumnCount; column++)
-        {
-          //board[row][column] = _Board[row, column];
-        }
       }
 
       return board;
@@ -293,20 +286,17 @@ namespace Griddler_Solver
 
       return hints;
     }
-    private Int32 GetMaxItemCount(Hint[][] hints)
+    private Int32 GetMaxItemCount(Hint[][]? hints)
     {
       Int32 max = 0;
       
-      foreach (var hint in hints)
+      foreach (var hint in hints!)
       {
         max = Math.Max(max, hint.Length);
       }
 
       return max;
     }
-
-    public List<PuzzleColors> ListColors
-    { get; set; } = [];
 
     public void Draw(Canvas canvas)
     {
@@ -370,7 +360,7 @@ namespace Griddler_Solver
       currentX = _MaxHintsCountRow * _CellSize;
       for (Int32 col = 0; col < HintsColumnCount; col++)
       {
-        Hint[] list = _HintsColumn[col];
+        Hint[] list = HintsColumn[col];
         currentY = (_MaxHintsCountColumn - list.Length) * _CellSize;
 
         foreach (Hint hint in list)
@@ -387,7 +377,7 @@ namespace Griddler_Solver
       currentY = _MaxHintsCountColumn  * _CellSize;
       for (Int32 row = 0; row < HintsRowCount; row++)
       {
-        Hint[] list = _HintsRow[row];
+        Hint[] list = HintsRow[row];
         currentX = (_MaxHintsCountRow - list.Length) * _CellSize;
 
         foreach (Hint hint in list)
