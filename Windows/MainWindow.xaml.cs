@@ -190,13 +190,8 @@ namespace Griddler_Solver
       Dispatcher.Invoke(new Action(() =>
       {
         AddMessage($"Iterations: {_Solver.Result.Iterations}, Time elapsed: {_Solver.Result.TimeTaken.ToString(Solver.TimeFormat)}");
+        AddMessage($"End");
 
-        if (!_Solver.Break)
-        {
-          MessageBox.Show("Done", String.Empty, MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        _ProgressWindow?.Close();
         _ProgressWindow = null;
 
         Draw();

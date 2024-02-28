@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -161,7 +164,7 @@ namespace Griddler_Solver
         currentY += _CellSize;
       }
 
-      if (Result?.IsSolved == true)
+      if (Result?.Result.Length > 0)
       {
         currentX = _MaxHintsCountRow * _CellSize;
         currentY = _MaxHintsCountColumn * _CellSize;
@@ -319,8 +322,13 @@ namespace Griddler_Solver
 
       Stopwatch stopWatchGlobal = Stopwatch.StartNew();
 
-      while (hasChanged)
+      while (!Board.IsSolved())
       {
+        if (Break)
+        {
+          break;
+        }
+
         Stopwatch stopWatchIteration = Stopwatch.StartNew();
         
         iteration++;
@@ -331,14 +339,12 @@ namespace Griddler_Solver
         DateTime dateTime = DateTime.Now;
         Int32 dateTimeOfIteration = 0;
 
-        for (Int32 index = 0; index < listSolverLine.Count; index++) 
+        Parallel.ForEach(listSolverLine, solverLine =>
         {
           if (Break)
           {
-            break;
+            return;
           }
-
-          SolverLine solverLine = listSolverLine[index];
 
           hasChanged |= solverLine.Solve();
           generatedPermutations += solverLine.LineSolver.GeneratedPermutations;
@@ -346,11 +352,11 @@ namespace Griddler_Solver
           if ((DateTime.Now - dateTime).TotalSeconds > 5)
           {
             PrintIterationStatistic(iteration, generatedPermutations, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
-            
+
             dateTime = DateTime.Now;
             dateTimeOfIteration = iteration;
           }
-        }
+        });
 
         stopWatchIteration.Stop();
         if (dateTimeOfIteration != iteration || (DateTime.Now - dateTime).TotalSeconds > 1)
