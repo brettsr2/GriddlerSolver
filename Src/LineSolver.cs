@@ -7,9 +7,9 @@ namespace Griddler_Solver
 {
   enum CellValue
   {
-    Unknown = -1,
-    Blank = 0,
-    Filled = 1,
+    Unknown = 0,
+    Background = 1,
+    Color1 = 2,
   }
 
   class LineSolver
@@ -97,7 +97,7 @@ namespace Griddler_Solver
       for (int i = startIdx; i < maxStartingIndex; i++)
       {
         var clone = line.ToArray();
-        FillCells(clone, i, hint.Count, CellValue.Filled);
+        FillCells(clone, i, hint.Count, (CellValue)hint.ColorId);
 
         GeneratePermutations(lineOrigin, clone, i + hint.Count + 1, new Queue<Hint>(hints));
       }
@@ -134,7 +134,7 @@ namespace Griddler_Solver
       {
         if (line[i] == CellValue.Unknown)
         {
-          line[i] = CellValue.Blank;
+          line[i] = CellValue.Background;
         }
       }
     }

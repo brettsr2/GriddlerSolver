@@ -207,11 +207,11 @@ namespace Griddler_Solver
           {
             unknownCount++;
           }
-          else if (_Board[row, col] == CellValue.Blank)
+          else if (_Board[row, col] == CellValue.Background)
           {
             blankCount++;
           }
-          else if (_Board[row, col] == CellValue.Filled)
+          else
           {
             filledCount++;
           }
@@ -439,9 +439,12 @@ namespace Griddler_Solver
           for (Int32 row = 0; row < HintsRowCount; row++)
           {
             CellValue? value = Result.Result?[row][col];
-            Double x = currentX + col * _CellSize;
-            Double y = currentY + row * _CellSize;
-            createRectangle(x, y, ListColors[(Int32)value + 1].ColorBrush);
+            if (value != null)
+            {
+              Double x = currentX + col * _CellSize;
+              Double y = currentY + row * _CellSize;
+              createRectangle(x, y, ListColors[(Int32)value].ColorBrush);
+            }
           }
         }
 

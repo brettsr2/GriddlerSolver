@@ -9,11 +9,17 @@ namespace Griddler_Solver.Json
     public List<PuzzleColors> GetListSolidColorBrush()
     {
       List<PuzzleColors> listSolidColorBrush = [];
-      listSolidColorBrush.Add(new PuzzleColors());
+      listSolidColorBrush.Add(new PuzzleColors()
+      {
+        HexColor = "#FFEF88BE"
+      });
 
       foreach (Int32 color in usedColors)
       {
-        listSolidColorBrush.Add(new PuzzleColors() { HexColor = "#" + colors[color] });
+        listSolidColorBrush.Add(new PuzzleColors()
+        { 
+          HexColor = "#" + colors[color] 
+        });
       }
 
       return listSolidColorBrush;
