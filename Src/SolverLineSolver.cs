@@ -13,13 +13,16 @@ namespace Griddler_Solver
     Color1 = 2,
   }
 
-  class LineSolver
+  class SolverLineSolver
   {
     public Config Config
     { get; set; } = new Config();
 
     public UInt64 GeneratedPermutations
-    { get; set; }
+    { get; set; } = 0;
+
+    public Boolean IsSolved
+    { get; set; } = false;
 
     private List<CellValue[]> _CurrentLinePermutations = [];
 
@@ -27,6 +30,7 @@ namespace Griddler_Solver
     {
       if (IsLineFull(line))
       {
+        IsSolved = true;
         return line;
       }
 

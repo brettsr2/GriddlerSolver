@@ -75,23 +75,29 @@ namespace Griddler_Solver
       return row;
     }
 
-    public void ReplaceColumn(Int32 indexColumn, CellValue[] column)
+    public void MergeColumn(Int32 indexColumn, CellValue[] column)
     {
       lock (_Lock)
       {
         for (Int32 row = 0; row < column.Length; row++)
         {
-          _Board[row, indexColumn] = column[row];
+          if (_Board[row, indexColumn] == CellValue.Unknown)
+          {
+            _Board[row, indexColumn] = column[row];
+          }
         }
       }
     }
-    public void ReplaceRow(Int32 indexRow, CellValue[] row)
+    public void MergeRow(Int32 indexRow, CellValue[] row)
     {
       lock (_Lock)
       {
         for (Int32 column = 0; column < row.Length; column++)
         {
-          _Board[indexRow, column] = row[column];
+          if (_Board[indexRow, column] == CellValue.Unknown)
+          {
+            _Board[indexRow, column] = row[column];
+          }
         }
       }
     }

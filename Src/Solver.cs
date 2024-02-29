@@ -332,10 +332,8 @@ namespace Griddler_Solver
         listSolverLine[index].ListIndex = index;
       }
 
-      Boolean hasChanged = true;
-      Int32 iteration = 0;
-
       Stopwatch stopWatchGlobal = Stopwatch.StartNew();
+      Int32 iteration = 0;
 
       while (!Board.IsSolved())
       {
@@ -349,12 +347,22 @@ namespace Griddler_Solver
         iteration++;
         UInt64 generatedPermutations = 0;
 
-        hasChanged = false;
-
         DateTime dateTime = DateTime.Now;
         Int32 dateTimeOfIteration = 0;
 
-        Parallel.ForEach(listSolverLine, solverLine =>
+        List<SolverLine> listSolverLineFiltered = new List<SolverLine>(listSolverLine.Count);
+        foreach (SolverLine solverLine in listSolverLine)
+        {
+          if (!solverLine.SolverLineSolver.IsSolved)
+          {
+            listSolverLineFiltered.Add(solverLine);
+          }
+        }
+
+        listSolverLine = listSolverLineFiltered;
+
+        var options = new ParallelOptions { MaxDegreeOfParallelism = -1 };
+        Parallel.ForEach(listSolverLine, options, solverLine =>
         {
           if (Config.Break)
           {
@@ -363,8 +371,8 @@ namespace Griddler_Solver
 
           Thread.CurrentThread.Name = "SolverLine " + solverLine.ToString();
 
-          hasChanged |= solverLine.Solve();
-          generatedPermutations += solverLine.LineSolver.GeneratedPermutations;
+          solverLine.Solve();
+          generatedPermutations += solverLine.SolverLineSolver.GeneratedPermutations;
 
           if ((DateTime.Now - dateTime).TotalSeconds > 5)
           {
