@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json.Serialization;
 
 namespace Griddler_Solver
 {
@@ -10,14 +7,48 @@ namespace Griddler_Solver
   {
     private Object _Lock = new();
 
-    private CellValue[,] _Board
+    [JsonIgnore]
+    public CellValue[,] _Board
     { get; set; } = new CellValue[0, 0];
+
+    public Boolean IsSolved
+    {
+      get
+      {
+        for (Int32 row = 0; row < HintsRowCount; row++)
+        {
+          for (Int32 col = 0; col < HintsColumnCount; col++)
+          {
+            if (this[row, col] == CellValue.Unknown)
+            {
+              return false;
+            }
+          }
+        }
+
+        return true;
+      }
+    }
+
+    [JsonIgnore]
+    public TimeSpan TimeTaken
+    { get; set; }
+    [JsonIgnore]
+    public Int32 Iterations
+    { get; set; }
 
     public CellValue this[Int32 row, Int32 column]
     {
       get
       {
-        return _Board[row, column];
+        if (row < _Board.GetLength(0) && column < _Board.GetLength(1))
+        {
+          return _Board[row, column];
+        }
+        else
+        {
+          return CellValue.Unknown;
+        }
       }
     }
 
@@ -112,22 +143,6 @@ namespace Griddler_Solver
       }
 
       return board;
-    }
-
-    public Boolean IsSolved()
-    {
-      for (Int32 row = 0; row < HintsRowCount; row++)
-      {
-        for (Int32 col = 0; col < HintsColumnCount; col++)
-        {
-          if (this[row, col] == CellValue.Unknown)
-          {
-            return false;
-          }
-        }
-      }
-
-      return true;
     }
   }
 }

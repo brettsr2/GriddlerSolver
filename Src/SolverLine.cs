@@ -26,41 +26,60 @@ namespace Griddler_Solver
 
     public Int32 Score
     { get; set; }
-    public Int32 ListIndex // index in the sorted list by score
-    { get; set; }
 
     public Board Board
     { get; set; } = new();
 
     public Hint[] Hints
-    { get; set; } = Array.Empty<Hint>();
+    {
+      get
+      {
+        return IsRow ? Board.HintsRow[Index] : Board.HintsColumn[Index];
+      }
+    }
 
-    public UInt64 GeneratedPermutations
-    { get; set; } = 0;
+    public UInt64 FirstPermutationsCount
+    { get; set; }
+
+    private UInt64 _MaxPermutationsCount = UInt64.MaxValue;
+    public UInt64 MaxPermutationsCount
+    {
+      get
+      {
+        if (_MaxPermutationsCount == UInt64.MaxValue)
+        {
+          var line = IsRow ? Board.GetRow(Index) : Board.GetColumn(Index);
+          Int32 n = ((line.Length) - (Hints.Sum(hint => hint.Count)) + (1));
+          Int32 k = Hints.Length;
+
+          static BigInteger Factorial(BigInteger number)
+          {
+            if (number <= 1)
+            {
+              return 1;
+            }
+            return number * Factorial(number - 1);
+          }
+
+          _MaxPermutationsCount = (UInt64)(Factorial(n) / (Factorial(k) * Factorial(n - k)));
+        }
+
+        return _MaxPermutationsCount;
+      }
+     }
+
+    public UInt64 CurrentPermutationsCount
+    {
+      get
+      {
+        return (UInt64)_CurrentLinePermutations.Count;
+      }
+    }
 
     public Boolean IsSolved
     { get; set; } = false;
 
     private List<CellValue[]> _CurrentLinePermutations = [];
-
-    public UInt64 CalculatePermutations()
-    {
-      var line = IsRow ? Board.GetRow(Index) : Board.GetColumn(Index);
-      Int32 n = ((line.Length) - (Hints.Sum(hint => hint.Count)) + (1));
-      Int32 k = Hints.Length;
-
-      static BigInteger Factorial(BigInteger number)
-      {
-        if (number <= 1)
-        {
-          return 1;
-        }
-        return number * Factorial(number - 1);
-      }
-
-      BigInteger combinations = Factorial(n) / (Factorial(k) * Factorial(n - k));
-      return (UInt64)combinations;
-    }
 
     public void Solve()
     {
@@ -91,7 +110,7 @@ namespace Griddler_Solver
       if (_CurrentLinePermutations.Count == 0)
       {
         GeneratePermutations(line, hints);
-        GeneratedPermutations = Convert.ToUInt64(_CurrentLinePermutations.Count);
+        FirstPermutationsCount = CurrentPermutationsCount;
       }
       else
       {
@@ -105,7 +124,6 @@ namespace Griddler_Solver
         }
 
         _CurrentLinePermutations = newCurrent;
-        GeneratedPermutations = Convert.ToUInt64(_CurrentLinePermutations.Count);
       }
 
       if (Config.Break)
@@ -114,6 +132,11 @@ namespace Griddler_Solver
       }
 
       Merge(clone, _CurrentLinePermutations);
+
+      if (_CurrentLinePermutations.Count > 10000000)
+      {
+        _CurrentLinePermutations = [];
+      }
       return clone;
     }
 
@@ -240,7 +263,10 @@ namespace Griddler_Solver
 
     public override String ToString()
     {
-      return $"{ListIndex} - {(IsRow ? "Row" : "Column")} {Number} - {Score}";
+      UInt64 percentFirst = FirstPermutationsCount * 100 / MaxPermutationsCount;
+      UInt64 percentCurrent = CurrentPermutationsCount * 100 / MaxPermutationsCount;
+
+      return $"{(IsRow ? "Row" : "Column")} {Number} - {Score} - {MaxPermutationsCount}/{FirstPermutationsCount} {percentFirst}%/{CurrentPermutationsCount} {percentCurrent}%";
     }
   }
 }

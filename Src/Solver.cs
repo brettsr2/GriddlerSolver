@@ -54,12 +54,10 @@ namespace Griddler_Solver
     #endregion // drawing
 
     #region solving
-    private IProgress? _IProgress = null;
     [JsonIgnore]
     public Config Config
     { get; set; } = new();
-    public SolverResult Result
-    { get; set; } = new();
+    private IProgress? _IProgress = null;
     #endregion // solving
 
     public Solver()
@@ -164,57 +162,52 @@ namespace Griddler_Solver
         currentY += _CellSize;
       }
 
-      if (Result?.Result.Length > 0)
+      // board itself
+      currentX = _MaxHintsCountRow * _CellSize;
+      currentY = _MaxHintsCountColumn * _CellSize;
+
+      for (Int32 col = 0; col < Board.HintsColumnCount; col++)
       {
-        currentX = _MaxHintsCountRow * _CellSize;
-        currentY = _MaxHintsCountColumn * _CellSize;
-
-        for (Int32 col = 0; col < Board.HintsColumnCount; col++)
+        for (Int32 row = 0; row < Board.HintsRowCount; row++)
         {
-          for (Int32 row = 0; row < Board.HintsRowCount; row++)
-          {
-            CellValue? value = Result.Result?[row][col];
-            if (value != null)
-            {
-              Double x = currentX + col * _CellSize;
-              Double y = currentY + row * _CellSize;
-              createRectangle(x, y, ListColors[(Int32)value].ColorBrush);
-            }
-          }
-        }
-
-        for (Int32 row = 0; row <= Board.HintsRowCount; row++)
-        {
-          Double x2 = currentX + Board.HintsColumnCount * _CellSize;
-          Double y = currentY + row * _CellSize;
-
-          SolidColorBrush brush = _BrushGrey;
-          Double thickness = 1;
-
-          if (row % 5 == 0)
-          {
-            brush = _BrushBlack;
-            thickness = 2;
-          }
-
-          createLine(currentX, y, x2, y, thickness, brush);
-        }
-        for (Int32 col = 0; col <= Board.HintsColumnCount; col++)
-        {
+          CellValue value = Board[row, col];
           Double x = currentX + col * _CellSize;
-          Double y2 = currentY + Board.HintsRowCount * _CellSize;
-
-          SolidColorBrush brush = _BrushGrey;
-          Double thickness = 1;
-
-          if (col % 5 == 0)
-          {
-            brush = _BrushBlack;
-            thickness = 2;
-          }
-
-          createLine(x, currentY, x, y2, thickness, brush);
+          Double y = currentY + row * _CellSize;
+          createRectangle(x, y, ListColors[(Int32)value].ColorBrush);
         }
+      }
+
+      for (Int32 row = 0; row <= Board.HintsRowCount; row++)
+      {
+        Double x2 = currentX + Board.HintsColumnCount * _CellSize;
+        Double y = currentY + row * _CellSize;
+
+        SolidColorBrush brush = _BrushGrey;
+        Double thickness = 1;
+
+        if (row % 5 == 0)
+        {
+          brush = _BrushBlack;
+          thickness = 2;
+        }
+
+        createLine(currentX, y, x2, y, thickness, brush);
+      }
+      for (Int32 col = 0; col <= Board.HintsColumnCount; col++)
+      {
+        Double x = currentX + col * _CellSize;
+        Double y2 = currentY + Board.HintsRowCount * _CellSize;
+
+        SolidColorBrush brush = _BrushGrey;
+        Double thickness = 1;
+
+        if (col % 5 == 0)
+        {
+          brush = _BrushBlack;
+          thickness = 2;
+        }
+
+        createLine(x, currentY, x, y2, thickness, brush);
       }
     }
 
@@ -307,7 +300,6 @@ namespace Griddler_Solver
           IsRow = true,
           Score = CalculateScore(Board.HintsRow[row]),
           Board = Board,
-          Hints = Board.HintsRow[row],
         });
       }
       for (Int32 column = 0; column < Board.HintsColumnCount; column++)
@@ -319,23 +311,20 @@ namespace Griddler_Solver
           IsRow = false,
           Score = CalculateScore(Board.HintsColumn[column]),
           Board = Board,
-          Hints = Board.HintsColumn[column],
         });
       }
+      List<SolverLine> listSolverLineOrigin = new(listSolverLine);
+
       listSolverLine.Sort(delegate (SolverLine line1, SolverLine line2)
       {
+        //return line1.MaxPermutationsCount.CompareTo(line2.MaxPermutationsCount);
         return -line1.Score.CompareTo(line2.Score);
       });
-
-      for (Int32 index = 0; index < listSolverLine.Count; index++)
-      {
-        listSolverLine[index].ListIndex = index;
-      }
 
       Stopwatch stopWatchGlobal = Stopwatch.StartNew();
       Int32 iteration = 0;
 
-      while (!Board.IsSolved())
+      while (!Board.IsSolved)
       {
         if (Config.Break)
         {
@@ -371,15 +360,16 @@ namespace Griddler_Solver
 
           Thread.CurrentThread.Name = "SolverLine " + solverLine.ToString();
 
-          UInt64 permutationsCount = solverLine.CalculatePermutations();
-          if (permutationsCount > 10000000)
+          UInt64 maxPermutationsCount = solverLine.MaxPermutationsCount;
+          UInt64 permutationsLimit = (UInt64)iteration * 1000000;
+          if (maxPermutationsCount > permutationsLimit)
           {
-            _IProgress?.AddMessage($"    Line {solverLine} skipped, permutations count {permutationsCount}");
+            Debug.WriteLine($"{solverLine} skipped, permutations limit {permutationsLimit}");
             return;
           }
 
           solverLine.Solve();
-          generatedPermutations += solverLine.GeneratedPermutations;
+          generatedPermutations += solverLine.CurrentPermutationsCount;
 
           if ((DateTime.Now - dateTime).TotalSeconds > 5)
           {
@@ -390,6 +380,12 @@ namespace Griddler_Solver
           }
         });
 
+        Debug.WriteLine($"Iteration {iteration}");
+        foreach (SolverLine solverLine in listSolverLineOrigin)
+        {
+          Debug.WriteLine(solverLine.ToString());
+        }
+
         stopWatchIteration.Stop();
         if (dateTimeOfIteration != iteration || (DateTime.Now - dateTime).TotalSeconds > 1)
         {
@@ -397,14 +393,8 @@ namespace Griddler_Solver
         }
       }
 
-      stopWatchGlobal.Stop();
-      Result = new SolverResult
-      {
-        IsSolved = Board.IsSolved(),
-        Result = Board.Convert(),
-        Iterations = iteration,
-        TimeTaken = stopWatchGlobal.Elapsed,
-      };
+      Board.Iterations = iteration;
+      Board.TimeTaken = stopWatchGlobal.Elapsed;
     }
   }
 }

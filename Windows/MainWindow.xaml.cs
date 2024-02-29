@@ -27,6 +27,7 @@ namespace Griddler_Solver
       InitializeComponent();
 
       comboBoxUrl.Items.Add("Snoopy 20x15x2 517 | https://www.griddlers.net/nonogram/-/g/183521");
+      comboBoxUrl.Items.Add("Tree in a Vase 40x65x2 170266 | https://www.griddlers.net/nonogram/-/g/276087");
       comboBoxUrl.Items.Add("Unicorn [35x40x2] 178714 | https://www.griddlers.net/nonogram/-/g/276577");
       comboBoxUrl.Items.Add("In the Countryside [50x50x2] ~0.7M | https://www.griddlers.net/nonogram/-/g/275956");
       comboBoxUrl.Items.Add("Family portrait [40x40x2] ~1.1M | https://www.griddlers.net/nonogram/-/g/276558");
@@ -38,10 +39,10 @@ namespace Griddler_Solver
 
       stringBuilder.AppendLine($"{_Solver.Name}");
       stringBuilder.AppendLine($"[{_Solver.Board.HintsRowCount},{_Solver.Board.HintsColumnCount}]");
-      if (_Solver.Result.IsSolved)
+      if (_Solver.Board.IsSolved)
       {
-        stringBuilder.AppendLine($"{_Solver.Result.Iterations}");
-        stringBuilder.AppendLine($"{_Solver.Result.TimeTaken.ToString(Solver.TimeFormat)}");
+        stringBuilder.AppendLine($"{_Solver.Board.Iterations}");
+        stringBuilder.AppendLine($"{_Solver.Board.TimeTaken.ToString(Solver.TimeFormat)}");
       }
 
       label.Content = stringBuilder.ToString();
@@ -183,6 +184,8 @@ namespace Griddler_Solver
         {
           _ProgressWindow.textBoxOutput.AppendText(message + Environment.NewLine);
           _ProgressWindow.textBoxOutput.ScrollToEnd();
+
+          Draw();
         }
       }));
     }
@@ -190,7 +193,7 @@ namespace Griddler_Solver
     {
       Dispatcher.Invoke(new Action(() =>
       {
-        AddMessage($"Iterations: {_Solver.Result.Iterations}, Time elapsed: {_Solver.Result.TimeTaken.ToString(Solver.TimeFormat)}");
+        AddMessage($"Iterations: {_Solver.Board.Iterations}, Time elapsed: {_Solver.Board.TimeTaken.ToString(Solver.TimeFormat)}");
         AddMessage($"End");
 
         _ProgressWindow = null;
