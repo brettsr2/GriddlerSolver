@@ -44,23 +44,18 @@ namespace Griddler_Solver
     public void Init()
     {
       _Board = new CellValue[HintsRowCount, HintsColumnCount];
-
-      for (Int32 row = 0; row < HintsRowCount; row++)
-      {
-        for (Int32 col = 0; col < HintsColumnCount; col++)
-        {
-          _Board[row, col] = CellValue.Unknown;
-        }
-      }
     }
 
     public CellValue[] GetColumn(Int32 indexColumn)
     {
       CellValue[] column = new CellValue[HintsRowCount];
 
-      for (int row = 0; row < column.Length; row++)
+      lock (_Lock)
       {
-        column[row] = _Board[row, indexColumn];
+        for (int row = 0; row < column.Length; row++)
+        {
+          column[row] = _Board[row, indexColumn];
+        }
       }
 
       return column;
@@ -69,9 +64,12 @@ namespace Griddler_Solver
     {
       CellValue[] row = new CellValue[HintsColumnCount];
 
-      for (Int32 column = 0; column < row.Length; column++)
+      lock (_Lock)
       {
-        row[column] = _Board[indexRow, column];
+        for (Int32 column = 0; column < row.Length; column++)
+        {
+          row[column] = _Board[indexRow, column];
+        }
       }
 
       return row;

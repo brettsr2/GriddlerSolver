@@ -23,6 +23,8 @@ namespace Griddler_Solver
 
     public Int32 Score
     { get; set; }
+    public Int32 ListIndex // index in the sorted list by score
+    { get; set; }
     public Boolean Solved
     { get; set; }
 
@@ -70,7 +72,7 @@ namespace Griddler_Solver
 
     public override String ToString()
     {
-      return $"{(IsRow ? "Row" : "Column")} {Number} - {Score}";
+      return $"{ListIndex} - {(IsRow ? "Row" : "Column")} {Number} - {Score}";
     }
   }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -29,7 +30,7 @@ namespace Griddler_Solver
         return line;
       }
 
-      var clone = line.ToArray();
+      var clone = (CellValue[])line.Clone();
       if (hints.Length == 0)
       {
         FillEmptyCells(clone);
@@ -100,7 +101,7 @@ namespace Griddler_Solver
       if (hints.Count == 0)
       {
         FillEmptyCells(line);
-        _CurrentLinePermutations.Add(line.ToArray());
+        _CurrentLinePermutations.Add(line);
 
         return;
       }
@@ -112,7 +113,7 @@ namespace Griddler_Solver
 
       for (int i = startIdx; i < maxStartingIndex; i++)
       {
-        var clone = line.ToArray();
+        var clone = (CellValue[])line.Clone();
         FillCells(clone, i, hint.Count, (CellValue)hint.ColorId);
 
         GeneratePermutations(lineOrigin, clone, i + hint.Count + 1, new Queue<Hint>(hints));

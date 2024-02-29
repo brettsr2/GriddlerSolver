@@ -274,6 +274,10 @@ namespace Griddler_Solver
       stringBuilder.Append($" Permutations: {generatedPermutations}");
       stringBuilder.Append($" remaining time: {remainingTime}");
 
+      var memoryInfo = GC.GetGCMemoryInfo();
+      Int64 memoryPercent = (memoryInfo.MemoryLoadBytes * 100) / memoryInfo.TotalAvailableMemoryBytes;
+      stringBuilder.Append($" memory: {memoryPercent}%");
+
       _IProgress?.AddMessage(stringBuilder.ToString());
     }
     public void Solve(IProgress progress)
@@ -323,6 +327,11 @@ namespace Griddler_Solver
         return -line1.Score.CompareTo(line2.Score);
       });
 
+      for (Int32 index = 0; index < listSolverLine.Count; index++)
+      {
+        listSolverLine[index].ListIndex = index;
+      }
+
       Boolean hasChanged = true;
       Int32 iteration = 0;
 
@@ -351,6 +360,8 @@ namespace Griddler_Solver
           {
             return;
           }
+
+          Thread.CurrentThread.Name = "SolverLine " + solverLine.ToString();
 
           hasChanged |= solverLine.Solve();
           generatedPermutations += solverLine.LineSolver.GeneratedPermutations;
