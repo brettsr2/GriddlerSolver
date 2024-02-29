@@ -353,7 +353,7 @@ namespace Griddler_Solver
         List<SolverLine> listSolverLineFiltered = new List<SolverLine>(listSolverLine.Count);
         foreach (SolverLine solverLine in listSolverLine)
         {
-          if (!solverLine.SolverLineSolver.IsSolved)
+          if (!solverLine.IsSolved)
           {
             listSolverLineFiltered.Add(solverLine);
           }
@@ -379,7 +379,7 @@ namespace Griddler_Solver
           }
 
           solverLine.Solve();
-          generatedPermutations += solverLine.SolverLineSolver.GeneratedPermutations;
+          generatedPermutations += solverLine.GeneratedPermutations;
 
           if ((DateTime.Now - dateTime).TotalSeconds > 5)
           {
