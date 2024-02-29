@@ -371,6 +371,13 @@ namespace Griddler_Solver
 
           Thread.CurrentThread.Name = "SolverLine " + solverLine.ToString();
 
+          UInt64 permutationsCount = solverLine.CalculatePermutations();
+          if (permutationsCount > 10000000)
+          {
+            _IProgress?.AddMessage($"    Line {solverLine} skipped, permutations count {permutationsCount}");
+            return;
+          }
+
           solverLine.Solve();
           generatedPermutations += solverLine.SolverLineSolver.GeneratedPermutations;
 

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 
 namespace Griddler_Solver
 {
@@ -34,6 +36,29 @@ namespace Griddler_Solver
 
     public SolverLineSolver SolverLineSolver
     { get; set; } = new();
+
+    public UInt64 CalculatePermutations()
+    {
+      var line = IsRow ? Board.GetRow(Index) : Board.GetColumn(Index);
+      Int32 n = ((line.Length) - (Hints.Sum(hint => hint.Count)) + (1));
+      Int32 k = Hints.Length;
+
+      static BigInteger Factorial(BigInteger number)
+      {
+        if (number <= 1)
+        {
+          return 1;
+        }
+        return number * Factorial(number - 1);
+      }
+
+      BigInteger nFactorial = Factorial(n);
+      BigInteger kFactorial = Factorial(k);
+      BigInteger nMinuskFactorial = Factorial(n-k);
+
+      BigInteger combinations = nFactorial / (kFactorial * nMinuskFactorial);
+      return (UInt64)combinations;
+    }
 
     public void Solve()
     {

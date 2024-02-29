@@ -105,7 +105,10 @@ namespace Griddler_Solver
       if (hints.Count == 0)
       {
         FillEmptyCells(line);
-        _CurrentLinePermutations.Add(line);
+        if (IsPermutationValid(lineOrigin, line))
+        {
+          _CurrentLinePermutations.Add(line);
+        }
 
         return;
       }
