@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Text;
@@ -21,6 +22,9 @@ namespace Griddler_Solver
 
     private Solver _Solver
     { get; set; } = new();
+
+    private Boolean SettingComboBox
+    { get; set; }
 
     public MainWindow()
     {
@@ -162,6 +166,10 @@ namespace Griddler_Solver
         String json = File.ReadAllText(fileDialog.FileName);
         _Solver = JsonSerializer.Deserialize<Solver>(json)!;
 
+        SettingComboBox = true;
+        comboBoxUrl.Text = _Solver.Url;
+        SettingComboBox = false;
+
         Draw();
       }
     }
@@ -173,7 +181,10 @@ namespace Griddler_Solver
 
     private void OnComboBoxUrl_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-      _Solver = new Solver();
+      if (!SettingComboBox)
+      {
+        _Solver = new Solver();
+      }
       Draw();
     }
 
