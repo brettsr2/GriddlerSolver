@@ -223,7 +223,7 @@ namespace Griddler_Solver
       return max;
     }
 
-    private void PrintIterationStatistic(Int32 iteration, UInt64 generatedPermutations, TimeSpan globalElapsed, TimeSpan iterationElapsed)
+    private void PrintIterationStatistic(Int32 iteration, UInt64 generatedPermutations, UInt64 permutationsLimit, TimeSpan globalElapsed, TimeSpan iterationElapsed)
     {
       Int32 unknownCount = 0, blankCount = 0, filledCount = 0;
 
@@ -249,23 +249,13 @@ namespace Griddler_Solver
       Int32 total = Board.HintsRowCount * Board.HintsColumnCount;
       Int32 percentUnknown = unknownCount * 100 / total;
 
-      String remainingTime = "N/A";
-
-      if (percentUnknown < 100)
-      {
-        Int32 percentDone = 100 - percentUnknown;
-        Double percentDonePerSecond = globalElapsed.TotalSeconds / (100 - percentUnknown);
-        Double remainingSeconds = percentDonePerSecond * 100 - globalElapsed.TotalSeconds;
-        remainingTime = new TimeSpan(0, 0, (Int32)remainingSeconds).ToString(TimeFormat);
-      }
-
       StringBuilder stringBuilder = new StringBuilder();
       stringBuilder.Append($"[{globalElapsed.ToString(TimeFormat)}]");
       stringBuilder.Append($"[{iteration}]");
       stringBuilder.Append($"[{iterationElapsed.ToString(TimeFormat)}]");
       stringBuilder.Append($" Unknown: {unknownCount} ({percentUnknown}%) Blank: {blankCount} Filled: {filledCount}");
       stringBuilder.Append($" Permutations: {generatedPermutations}");
-      stringBuilder.Append($" remaining time: {remainingTime}");
+      stringBuilder.Append($" Permutations limit: {permutationsLimit}");
 
       var memoryInfo = GC.GetGCMemoryInfo();
       Int64 memoryPercent = (memoryInfo.MemoryLoadBytes * 100) / memoryInfo.TotalAvailableMemoryBytes;
@@ -369,7 +359,7 @@ namespace Griddler_Solver
           if (maxPermutationsCount > permutationsLimit)
           {
             permutationsMinLimit = Math.Min(permutationsMinLimit, maxPermutationsCount);
-            Debug.WriteLine($"{solverLine} skipped, permutations limit {permutationsLimit}");
+            _IProgress?.AddDebugMessage($"{solverLine} skipped, permutations limit {permutationsLimit}");
             return;
           }
 
@@ -379,17 +369,17 @@ namespace Griddler_Solver
 
           if ((DateTime.Now - dateTime).TotalSeconds > 5)
           {
-            PrintIterationStatistic(iteration, generatedPermutations, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
+            PrintIterationStatistic(iteration, generatedPermutations, permutationsLimit, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
 
             dateTime = DateTime.Now;
             dateTimeOfIteration = iteration;
           }
         });
 
-        Debug.WriteLine($"Iteration {iteration}");
+        _IProgress?.AddDebugMessage($"Iteration {iteration}");
         foreach (SolverLine solverLine in listSolverLine)
         {
-          Debug.WriteLine(solverLine.ToString());
+          _IProgress?.AddDebugMessage(solverLine.ToString());
         }
 
         if (changed == false)
@@ -400,7 +390,7 @@ namespace Griddler_Solver
         stopWatchIteration.Stop();
         if (dateTimeOfIteration != iteration || (DateTime.Now - dateTime).TotalSeconds > 1)
         {
-          PrintIterationStatistic(iteration, generatedPermutations, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
+          PrintIterationStatistic(iteration, generatedPermutations, permutationsLimit, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
         }
       }
 

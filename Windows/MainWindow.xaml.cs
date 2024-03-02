@@ -18,6 +18,11 @@ namespace Griddler_Solver
   {
     private String _FileDialogFilter = "JSON file (*.json)|*.json";
 
+#if DEBUG
+    private String _LogFile = "LogFile.txt";
+    private Object _LogFileLock = new Object();
+#endif
+
     private ProgressWindow? _ProgressWindow = null;
 
     private Solver _Solver
@@ -44,7 +49,7 @@ namespace Griddler_Solver
       StringBuilder stringBuilder = new StringBuilder();
 
       stringBuilder.AppendLine($"{_Solver.Name}");
-      stringBuilder.AppendLine($"[{_Solver.Board.HintsRowCount},{_Solver.Board.HintsColumnCount}]");
+      stringBuilder.AppendLine($"[{_Solver.Board.HintsColumnCount}x{_Solver.Board.HintsRowCount}x{_Solver.ListColors.Count - 1}]");
       if (_Solver.Board.IsSolved)
       {
         stringBuilder.AppendLine($"{_Solver.Board.Iterations}");
@@ -59,6 +64,13 @@ namespace Griddler_Solver
 
     private void OnSolve_Click(object sender, RoutedEventArgs e)
     {
+#if DEBUG
+      if (File.Exists(_LogFile))
+      {
+        File.Delete(_LogFile);
+      }
+#endif
+
       _ProgressWindow = new(this);
       _ProgressWindow.Show();
 
@@ -191,6 +203,8 @@ namespace Griddler_Solver
 
     public void AddMessage(String message)
     {
+      AddDebugMessage(message);
+
       Dispatcher.Invoke(new Action(() =>
       {
         if (_ProgressWindow != null)
@@ -201,6 +215,15 @@ namespace Griddler_Solver
           Draw();
         }
       }));
+    }
+    public void AddDebugMessage(String message)
+    {
+#if DEBUG
+      lock(_LogFileLock)
+      {
+        File.AppendAllText(_LogFile, message + Environment.NewLine);
+      }
+#endif
     }
     public void Completed()
     {
