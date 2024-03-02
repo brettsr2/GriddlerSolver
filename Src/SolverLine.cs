@@ -76,6 +76,9 @@ namespace Griddler_Solver
       }
     }
 
+    public Boolean Changed
+    { get; set; } = false;
+
     public Boolean IsSolved
     { get; set; } = false;
 
@@ -83,6 +86,7 @@ namespace Griddler_Solver
 
     public void Solve()
     {
+      Changed = false;
       if (IsRow)
       {
         Board.MergeRow(Index, Solve(Board.GetRow(Index), Hints));
@@ -96,13 +100,15 @@ namespace Griddler_Solver
     {
       if (IsLineFull(line))
       {
-        IsSolved = true;
+        Changed = IsSolved = true;
         return line;
       }
 
       var clone = (CellValue[])line.Clone();
       if (hints.Length == 0)
       {
+        Changed = IsSolved = true;
+
         FillEmptyCells(clone);
         return clone;
       }
@@ -133,9 +139,9 @@ namespace Griddler_Solver
 
       Merge(clone, _CurrentLinePermutations);
 
-      if (_CurrentLinePermutations.Count > 10000000)
+      //if (_CurrentLinePermutations.Count > 10000000)
       {
-        _CurrentLinePermutations = [];
+        //_CurrentLinePermutations = [];
       }
       return clone;
     }
@@ -223,6 +229,7 @@ namespace Griddler_Solver
         }
         if (allMatch)
         {
+          Changed = true;
           line[index] = value;
         }
       }
@@ -266,7 +273,7 @@ namespace Griddler_Solver
       UInt64 percentFirst = FirstPermutationsCount * 100 / MaxPermutationsCount;
       UInt64 percentCurrent = CurrentPermutationsCount * 100 / MaxPermutationsCount;
 
-      return $"{(IsRow ? "Row" : "Column")} {Number} - {Score} - {MaxPermutationsCount}/{FirstPermutationsCount} {percentFirst}%/{CurrentPermutationsCount} {percentCurrent}%";
+      return $"{(IsRow ? "Row" : "Column")} {Number} - {Score} - {MaxPermutationsCount}/{FirstPermutationsCount}({percentFirst}%)/{CurrentPermutationsCount}({percentCurrent}%)";
     }
   }
 }

@@ -263,7 +263,7 @@ namespace Griddler_Solver
       stringBuilder.Append($"[{globalElapsed.ToString(TimeFormat)}]");
       stringBuilder.Append($"[{iteration}]");
       stringBuilder.Append($"[{iterationElapsed.ToString(TimeFormat)}]");
-      stringBuilder.Append($" Cells: {total} Unknown: {unknownCount} ({percentUnknown}%) Blank: {blankCount} Filled: {filledCount}");
+      stringBuilder.Append($" Unknown: {unknownCount} ({percentUnknown}%) Blank: {blankCount} Filled: {filledCount}");
       stringBuilder.Append($" Permutations: {generatedPermutations}");
       stringBuilder.Append($" remaining time: {remainingTime}");
 
@@ -276,7 +276,7 @@ namespace Griddler_Solver
     public void Solve(IProgress progress)
     {
       _IProgress = progress;
-      _IProgress?.AddMessage("Start");
+      _IProgress?.AddMessage($"Start Cells: {Board.HintsRowCount * Board.HintsColumnCount}");
 
       Board.Init();
 
@@ -324,6 +324,8 @@ namespace Griddler_Solver
       Stopwatch stopWatchGlobal = Stopwatch.StartNew();
       Int32 iteration = 0;
 
+      UInt64 permutationsLimit = 1000000;
+
       while (!Board.IsSolved)
       {
         if (Config.Break)
@@ -350,6 +352,9 @@ namespace Griddler_Solver
 
         listSolverLine = listSolverLineFiltered;
 
+        Boolean changed = false;
+        UInt64 permutationsMinLimit = UInt64.MaxValue;
+
         var options = new ParallelOptions { MaxDegreeOfParallelism = -1 };
         Parallel.ForEach(listSolverLine, options, solverLine =>
         {
@@ -361,15 +366,16 @@ namespace Griddler_Solver
           Thread.CurrentThread.Name = "SolverLine " + solverLine.ToString();
 
           UInt64 maxPermutationsCount = solverLine.MaxPermutationsCount;
-          UInt64 permutationsLimit = (UInt64)iteration * 1000000;
           if (maxPermutationsCount > permutationsLimit)
           {
+            permutationsMinLimit = Math.Min(permutationsMinLimit, maxPermutationsCount);
             Debug.WriteLine($"{solverLine} skipped, permutations limit {permutationsLimit}");
             return;
           }
 
           solverLine.Solve();
           generatedPermutations += solverLine.CurrentPermutationsCount;
+          changed |= solverLine.Changed;
 
           if ((DateTime.Now - dateTime).TotalSeconds > 5)
           {
@@ -381,9 +387,14 @@ namespace Griddler_Solver
         });
 
         Debug.WriteLine($"Iteration {iteration}");
-        foreach (SolverLine solverLine in listSolverLineOrigin)
+        foreach (SolverLine solverLine in listSolverLine)
         {
           Debug.WriteLine(solverLine.ToString());
+        }
+
+        if (changed == false)
+        {
+          permutationsLimit = permutationsMinLimit + 1;
         }
 
         stopWatchIteration.Stop();

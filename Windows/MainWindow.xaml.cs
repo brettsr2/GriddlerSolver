@@ -30,12 +30,13 @@ namespace Griddler_Solver
     {
       InitializeComponent();
 
-      comboBoxUrl.Items.Add("Buddha 36x35x2 42337 | https://www.griddlers.net/nonogram/-/g/268876");
-      comboBoxUrl.Items.Add("Snoopy 20x15x2 517 | https://www.griddlers.net/nonogram/-/g/183521");
-      comboBoxUrl.Items.Add("Tree in a Vase 40x65x2 170266 | https://www.griddlers.net/nonogram/-/g/276087");
+      comboBoxUrl.Items.Add("Buddha [36x35x2] 42337 | https://www.griddlers.net/nonogram/-/g/268876");
+      comboBoxUrl.Items.Add("Snoopy [20x15x2] 517 | https://www.griddlers.net/nonogram/-/g/183521");
+      comboBoxUrl.Items.Add("Tree in a Vase [40x65x2] 170266 | https://www.griddlers.net/nonogram/-/g/276087");
       comboBoxUrl.Items.Add("Unicorn [35x40x2] 178714 | https://www.griddlers.net/nonogram/-/g/276577");
       comboBoxUrl.Items.Add("In the Countryside [50x50x2] ~0.7M | https://www.griddlers.net/nonogram/-/g/275956");
       comboBoxUrl.Items.Add("Family portrait [40x40x2] ~1.1M | https://www.griddlers.net/nonogram/-/g/276558");
+      comboBoxUrl.Items.Add("Drummer [65x55x2] 693345 | https://www.griddlers.net/nonogram/-/g/275868");
       comboBoxUrl.Items.Add("Boat [50x50x2] ~21M | https://www.griddlers.net/nonogram/-/g/116627");
     }
     private void Draw()
