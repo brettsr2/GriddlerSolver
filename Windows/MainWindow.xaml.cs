@@ -26,6 +26,7 @@ namespace Griddler_Solver
     {
       InitializeComponent();
 
+      comboBoxUrl.Items.Add("Buddha 36x35x2 42337 | https://www.griddlers.net/nonogram/-/g/268876");
       comboBoxUrl.Items.Add("Snoopy 20x15x2 517 | https://www.griddlers.net/nonogram/-/g/183521");
       comboBoxUrl.Items.Add("Tree in a Vase 40x65x2 170266 | https://www.griddlers.net/nonogram/-/g/276087");
       comboBoxUrl.Items.Add("Unicorn [35x40x2] 178714 | https://www.griddlers.net/nonogram/-/g/276577");
