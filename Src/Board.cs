@@ -15,6 +15,11 @@ namespace Griddler_Solver
     {
       get
       {
+        if (HintsRowCount == 0 || HintsColumnCount == 0)
+        {
+          return false;
+        }
+
         for (Int32 row = 0; row < HintsRowCount; row++)
         {
           for (Int32 col = 0; col < HintsColumnCount; col++)

@@ -48,12 +48,13 @@ namespace Griddler_Solver
     {
       StringBuilder stringBuilder = new StringBuilder();
 
-      stringBuilder.AppendLine($"{_Solver.Name}");
-      stringBuilder.AppendLine($"[{_Solver.Board.HintsColumnCount}x{_Solver.Board.HintsRowCount}x{_Solver.ListColors.Count - 1}]");
+      stringBuilder.AppendLine($"Name: {_Solver.Name}");
+      Int32 countColors = _Solver.ListColors.Count > 0 ? _Solver.ListColors.Count - 1 : 0;
+      stringBuilder.AppendLine($"Size: [{_Solver.Board.HintsColumnCount}x{_Solver.Board.HintsRowCount}x{countColors}]");
       if (_Solver.Board.IsSolved)
       {
-        stringBuilder.AppendLine($"{_Solver.Board.Iterations}");
-        stringBuilder.AppendLine($"{_Solver.Board.TimeTaken.ToString(Solver.TimeFormat)}");
+        stringBuilder.AppendLine($"Iterations: {_Solver.Board.Iterations}");
+        stringBuilder.AppendLine($"Time elapsed: {_Solver.Board.TimeTaken.ToString(Solver.TimeFormat)}");
       }
 
       label.Content = stringBuilder.ToString();
