@@ -58,6 +58,8 @@ namespace Griddler_Solver
     public Config Config
     { get; set; } = new();
     private IProgress? _IProgress = null;
+
+    private List<StaticAnalysis> _ListStaticAnalysis = [];
     #endregion // solving
 
     public Solver()
@@ -125,6 +127,10 @@ namespace Griddler_Solver
 
         line.Y1 = y1;
         line.Y2 = y2;
+      };
+      Action<Double, Double, SolidColorBrush> createCross = (left, top, brush) =>
+      {
+        createLine(left, top, left + _CellSize, top + _CellSize, 1, brush);
       };
 
       Double currentX, currentY;
@@ -316,6 +322,8 @@ namespace Griddler_Solver
 
       UInt64 permutationsLimit = 1000000;
 
+      Task.Run(() => StaticAnalysis());
+
       while (!Board.IsSolved)
       {
         if (Config.Break)
@@ -394,8 +402,61 @@ namespace Griddler_Solver
         }
       }
 
+      Config.Break = true;
+
       Board.Iterations = iteration;
       Board.TimeTaken = stopWatchGlobal.Elapsed;
+    }
+    private void StaticAnalysis()
+    {
+      while(!Config.Break)
+      {
+        for (Int32 indexRow = 0; indexRow < Board.HintsRowCount; indexRow++)
+        {
+          CellValue[] row = Board.GetRow(indexRow);
+          Hint[] hints = Board.HintsRow[indexRow];
+
+          StaticAnalysisCheckLine(row, hints);
+        }
+
+        Task.Delay(1000).Wait();
+      }
+    }
+    private void StaticAnalysisCheckLine(CellValue[] line, Hint[] hints)
+    {
+      Int32 indexOnLine = 0;
+      CellValue cellValue = line[indexOnLine];
+
+      // find first available cell on line
+      for (Int32 indexLine = 0; indexLine < line.Length; indexLine++)
+      {
+        if (line[indexLine] != CellValue.Unknown)
+        {
+          indexOnLine = indexLine;
+          cellValue = line[indexOnLine];
+          break;
+        }
+      }
+
+      Boolean itFits = true;
+      for (Int32 indexHint = 0; indexHint < hints.Length; indexHint++)
+      {
+        Hint hint = hints[indexHint];
+
+        for (Int32 inHintCounter = 0; inHintCounter < hint.Count; inHintCounter++)
+        {
+          if (line[indexOnLine] != CellValue.Color1)
+          {
+            itFits = false;
+            break;
+          }
+        }
+
+        if (itFits == false)
+        {
+          break;
+        }
+      }
     }
   }
 }

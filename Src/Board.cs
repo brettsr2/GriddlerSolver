@@ -7,10 +7,6 @@ namespace Griddler_Solver
   {
     private Object _Lock = new();
 
-    [JsonIgnore]
-    public CellValue[,] _Board
-    { get; set; } = new CellValue[0, 0];
-
     public Boolean IsSolved
     {
       get
@@ -77,6 +73,23 @@ namespace Griddler_Solver
       }
     }
 
+    [JsonIgnore]
+    public CellValue[,] _Board
+    { get; set; } = new CellValue[0, 0];
+
+    public CellValue[][] CurrentState
+    {
+      get
+      {
+        return Convert();
+      }
+      set
+      {
+        Init();
+        Convert(value);
+      }
+    }
+
     public void Init()
     {
       _Board = new CellValue[HintsRowCount, HintsColumnCount];
@@ -138,7 +151,7 @@ namespace Griddler_Solver
       }
     }
 
-    public CellValue[][] Convert()
+    private CellValue[][] Convert()
     {
       CellValue[][] board = new CellValue[HintsRowCount][];
 
@@ -148,6 +161,13 @@ namespace Griddler_Solver
       }
 
       return board;
+    }
+    private void Convert(CellValue[][] cellValues)
+    {
+      for (Int32 row = 0; row < HintsRowCount; row++)
+      {
+        MergeRow(row, cellValues[row]);
+      }
     }
   }
 }
