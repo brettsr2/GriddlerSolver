@@ -11,14 +11,14 @@ namespace Griddler_Solver
     {
       get
       {
-        if (HintsRowCount == 0 || HintsColumnCount == 0)
+        if (RowCount == 0 || ColumnCount == 0)
         {
           return false;
         }
 
-        for (Int32 row = 0; row < HintsRowCount; row++)
+        for (Int32 row = 0; row < RowCount; row++)
         {
-          for (Int32 col = 0; col < HintsColumnCount; col++)
+          for (Int32 col = 0; col < ColumnCount; col++)
           {
             if (this[row, col] == CellValue.Unknown)
             {
@@ -58,14 +58,14 @@ namespace Griddler_Solver
     public Hint[][] HintsColumn
     { get; set; } = Array.Empty<Hint[]>();
 
-    public Int32 HintsRowCount
+    public Int32 RowCount
     {
       get
       {
         return HintsRow.Length;
       }
     }
-    public Int32 HintsColumnCount
+    public Int32 ColumnCount
     {
       get
       {
@@ -92,12 +92,12 @@ namespace Griddler_Solver
 
     public void Init()
     {
-      _Board = new CellValue[HintsRowCount, HintsColumnCount];
+      _Board = new CellValue[RowCount, ColumnCount];
     }
 
     public CellValue[] GetColumn(Int32 indexColumn)
     {
-      CellValue[] column = new CellValue[HintsRowCount];
+      CellValue[] column = new CellValue[RowCount];
 
       lock (_Lock)
       {
@@ -111,7 +111,7 @@ namespace Griddler_Solver
     }
     public CellValue[] GetRow(Int32 indexRow)
     {
-      CellValue[] row = new CellValue[HintsColumnCount];
+      CellValue[] row = new CellValue[ColumnCount];
 
       lock (_Lock)
       {
@@ -153,9 +153,9 @@ namespace Griddler_Solver
 
     private CellValue[][] Convert()
     {
-      CellValue[][] board = new CellValue[HintsRowCount][];
+      CellValue[][] board = new CellValue[RowCount][];
 
-      for (Int32 row = 0; row < HintsRowCount; row++)
+      for (Int32 row = 0; row < RowCount; row++)
       {
         board[row] = GetRow(row);
       }
@@ -164,7 +164,7 @@ namespace Griddler_Solver
     }
     private void Convert(CellValue[][] cellValues)
     {
-      for (Int32 row = 0; row < HintsRowCount; row++)
+      for (Int32 row = 0; row < RowCount; row++)
       {
         MergeRow(row, cellValues[row]);
       }

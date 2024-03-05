@@ -50,7 +50,7 @@ namespace Griddler_Solver
 
       stringBuilder.AppendLine($"Name: {_Solver.Name}");
       Int32 countColors = _Solver.ListColors.Count > 0 ? _Solver.ListColors.Count - 1 : 0;
-      stringBuilder.AppendLine($"Size: [{_Solver.Board.HintsColumnCount}x{_Solver.Board.HintsRowCount}x{countColors}]");
+      stringBuilder.AppendLine($"Size: [{_Solver.Board.ColumnCount}x{_Solver.Board.RowCount}x{countColors}]");
       if (_Solver.Board.IsSolved)
       {
         stringBuilder.AppendLine($"Iterations: {_Solver.Board.Iterations}");

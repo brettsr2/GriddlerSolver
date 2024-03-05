@@ -76,9 +76,9 @@ namespace Griddler_Solver
 
     public void Draw(Canvas canvas)
     {
-      if (Board.HintsRowCount != 0 && Board.HintsColumnCount != 0)
+      if (Board.RowCount != 0 && Board.ColumnCount != 0)
       {
-        _CellSize = Math.Min(canvas.ActualHeight / (_MaxHintsCountColumn + Board.HintsRowCount), canvas.ActualWidth / (_MaxHintsCountRow + Board.HintsColumnCount));
+        _CellSize = Math.Min(canvas.ActualHeight / (_MaxHintsCountColumn + Board.RowCount), canvas.ActualWidth / (_MaxHintsCountRow + Board.ColumnCount));
       }
       Double FontSize = _CellSize * 0.8;
 
@@ -131,12 +131,13 @@ namespace Griddler_Solver
       Action<Double, Double, SolidColorBrush> createCross = (left, top, brush) =>
       {
         createLine(left, top, left + _CellSize, top + _CellSize, 1, brush);
+        createLine(left + _CellSize, top, left, top + _CellSize, 1, brush);
       };
 
       Double currentX, currentY;
 
       currentX = _MaxHintsCountRow * _CellSize;
-      for (Int32 col = 0; col < Board.HintsColumnCount; col++)
+      for (Int32 col = 0; col < Board.ColumnCount; col++)
       {
         Hint[] list = Board.HintsColumn[col];
         currentY = (_MaxHintsCountColumn - list.Length) * _CellSize;
@@ -145,6 +146,10 @@ namespace Griddler_Solver
         {
           createRectangle(currentX, currentY, ListColors[hint.ColorId].ColorBrush);
           createText(currentX + _CellSize / 2, currentY + _CellSize / 2, hint.Count.ToString(), ListColors[1].ColorBrush);
+          if (hint.IsSolved)
+          {
+            createCross(currentX, currentY, _BrushGrey);
+          }
 
           currentY += _CellSize;
         }
@@ -153,7 +158,7 @@ namespace Griddler_Solver
       }
 
       currentY = _MaxHintsCountColumn * _CellSize;
-      for (Int32 row = 0; row < Board.HintsRowCount; row++)
+      for (Int32 row = 0; row < Board.RowCount; row++)
       {
         Hint[] list = Board.HintsRow[row];
         currentX = (_MaxHintsCountRow - list.Length) * _CellSize;
@@ -162,6 +167,11 @@ namespace Griddler_Solver
         {
           createRectangle(currentX, currentY, ListColors[hint.ColorId].ColorBrush);
           createText(currentX + _CellSize / 2, currentY + _CellSize / 2, hint.Count.ToString(), ListColors[1].ColorBrush);
+          if (hint.IsSolved)
+          {
+            createCross(currentX, currentY, _BrushGrey);
+          }
+
           currentX += _CellSize;
         }
 
@@ -172,9 +182,9 @@ namespace Griddler_Solver
       currentX = _MaxHintsCountRow * _CellSize;
       currentY = _MaxHintsCountColumn * _CellSize;
 
-      for (Int32 col = 0; col < Board.HintsColumnCount; col++)
+      for (Int32 col = 0; col < Board.ColumnCount; col++)
       {
-        for (Int32 row = 0; row < Board.HintsRowCount; row++)
+        for (Int32 row = 0; row < Board.RowCount; row++)
         {
           CellValue value = Board[row, col];
           Double x = currentX + col * _CellSize;
@@ -183,9 +193,9 @@ namespace Griddler_Solver
         }
       }
 
-      for (Int32 row = 0; row <= Board.HintsRowCount; row++)
+      for (Int32 row = 0; row <= Board.RowCount; row++)
       {
-        Double x2 = currentX + Board.HintsColumnCount * _CellSize;
+        Double x2 = currentX + Board.ColumnCount * _CellSize;
         Double y = currentY + row * _CellSize;
 
         SolidColorBrush brush = _BrushGrey;
@@ -199,10 +209,10 @@ namespace Griddler_Solver
 
         createLine(currentX, y, x2, y, thickness, brush);
       }
-      for (Int32 col = 0; col <= Board.HintsColumnCount; col++)
+      for (Int32 col = 0; col <= Board.ColumnCount; col++)
       {
         Double x = currentX + col * _CellSize;
-        Double y2 = currentY + Board.HintsRowCount * _CellSize;
+        Double y2 = currentY + Board.RowCount * _CellSize;
 
         SolidColorBrush brush = _BrushGrey;
         Double thickness = 1;
@@ -233,9 +243,9 @@ namespace Griddler_Solver
     {
       Int32 unknownCount = 0, blankCount = 0, filledCount = 0;
 
-      for (Int32 row = 0; row < Board.HintsRowCount; row++)
+      for (Int32 row = 0; row < Board.RowCount; row++)
       {
-        for (Int32 col = 0; col < Board.HintsColumnCount; col++)
+        for (Int32 col = 0; col < Board.ColumnCount; col++)
         {
           if (Board[row, col] == CellValue.Unknown)
           {
@@ -252,7 +262,7 @@ namespace Griddler_Solver
         }
       }
 
-      Int32 total = Board.HintsRowCount * Board.HintsColumnCount;
+      Int32 total = Board.RowCount * Board.ColumnCount;
       Int32 percentUnknown = unknownCount * 100 / total;
 
       StringBuilder stringBuilder = new StringBuilder();
@@ -272,9 +282,9 @@ namespace Griddler_Solver
     public void Solve(IProgress progress)
     {
       _IProgress = progress;
-      _IProgress?.AddMessage($"Start Cells: {Board.HintsRowCount * Board.HintsColumnCount}");
+      _IProgress?.AddMessage($"Start Cells: {Board.RowCount * Board.ColumnCount}");
 
-      Board.Init();
+      //Board.Init();
 
       static Int32 CalculateScore(Hint[] hints)
       {
@@ -287,7 +297,7 @@ namespace Griddler_Solver
       };
 
       List<SolverLine> listSolverLine = [];
-      for (Int32 row = 0; row < Board.HintsRowCount; row++)
+      for (Int32 row = 0; row < Board.RowCount; row++)
       {
         listSolverLine.Add(new SolverLine()
         {
@@ -298,7 +308,7 @@ namespace Griddler_Solver
           Board = Board,
         });
       }
-      for (Int32 column = 0; column < Board.HintsColumnCount; column++)
+      for (Int32 column = 0; column < Board.ColumnCount; column++)
       {
         listSolverLine.Add(new SolverLine()
         {
@@ -324,6 +334,7 @@ namespace Griddler_Solver
 
       Task.Run(() => StaticAnalysis());
 
+      Task.Delay(100).Wait();
       while (!Board.IsSolved)
       {
         if (Config.Break)
@@ -411,33 +422,40 @@ namespace Griddler_Solver
     {
       while(!Config.Break)
       {
-        for (Int32 indexRow = 0; indexRow < Board.HintsRowCount; indexRow++)
+        for (Int32 indexRow = 0; indexRow < Board.RowCount; indexRow++)
         {
           CellValue[] row = Board.GetRow(indexRow);
           Hint[] hints = Board.HintsRow[indexRow];
 
           StaticAnalysisCheckLine(row, hints);
         }
+        for (Int32 indexColumn = 0; indexColumn < Board.ColumnCount; indexColumn++)
+        {
+          CellValue[] column = Board.GetColumn(indexColumn);
+          Hint[] hints = Board.HintsColumn[indexColumn];
 
-        Task.Delay(1000).Wait();
+          StaticAnalysisCheckLine(column, hints);
+        }
+
+        Task.Delay(100).Wait();
       }
     }
     private void StaticAnalysisCheckLine(CellValue[] line, Hint[] hints)
     {
-      Int32 indexOnLine = 0;
-      CellValue cellValue = line[indexOnLine];
-
       // find first available cell on line
-      for (Int32 indexLine = 0; indexLine < line.Length; indexLine++)
+      static Int32 findFirst(CellValue[] line, Int32 indexStart)
       {
-        if (line[indexLine] != CellValue.Unknown)
+        for (Int32 indexLine = indexStart; indexLine < line.Length; indexLine++)
         {
-          indexOnLine = indexLine;
-          cellValue = line[indexOnLine];
-          break;
+          if (line[indexLine] == CellValue.Color)
+          {
+            return indexLine;
+          }
         }
+        return -1;
       }
 
+      Int32 indexOnLine = findFirst(line, 0);
       Boolean itFits = true;
       for (Int32 indexHint = 0; indexHint < hints.Length; indexHint++)
       {
@@ -445,17 +463,23 @@ namespace Griddler_Solver
 
         for (Int32 inHintCounter = 0; inHintCounter < hint.Count; inHintCounter++)
         {
-          if (line[indexOnLine] != CellValue.Color1)
+          if (line[indexOnLine] != CellValue.Color)
           {
             itFits = false;
             break;
           }
         }
 
-        if (itFits == false)
+        if (itFits)
+        {
+          hint.IsSolved = true;
+        }
+        else
         {
           break;
         }
+
+        indexOnLine = findFirst(line, indexOnLine + hint.Count + 1);
       }
     }
   }
