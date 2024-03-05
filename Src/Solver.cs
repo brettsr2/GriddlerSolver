@@ -441,10 +441,18 @@ namespace Griddler_Solver
       {
         for (Int32 indexRow = 0; indexRow < Board.RowCount; indexRow++)
         {
+          if (Config.Break)
+          {
+            break;
+          }
           StaticAnalysisCheckLine(true, indexRow);
         }
         for (Int32 indexColumn = 0; indexColumn < Board.ColumnCount; indexColumn++)
         {
+          if (Config.Break)
+          {
+            break;
+          }
           StaticAnalysisCheckLine(false, indexColumn);
         }
 
@@ -475,14 +483,28 @@ namespace Griddler_Solver
       {
         for (Int32 indexLine = indexStart; indexLine < line.Count; indexLine++)
         {
-          if (line[indexLine] == CellValue.Color)
+          if (line[indexLine] == CellValue.Background)
+          {
+            continue;
+          }
+          else if (line[indexLine] == CellValue.Color)
           {
             return indexLine;
           }
+          else
+          {
+            break;
+          }
         }
+
         return -1;
       }
+
       Int32 indexOnLine = findFirst(0);
+      if (indexOnLine == -1)
+      {
+        return;
+      }
 
       CellValue getCellValue(Int32 index)
       {
@@ -508,7 +530,13 @@ namespace Griddler_Solver
           Row = Row,
           Column = Column, 
           Type = reverted ? StaticAnalysisType.CellBackgroundPrevious : StaticAnalysisType.CellBackgroundNext
-        }); 
+        });
+
+        //if (_ListStaticAnalysis.Count == 50)
+        {
+          //_ListStaticAnalysis.Clear();
+          //Config.Break = true;
+        }
       }
 
       Boolean itFits = true;
@@ -518,7 +546,8 @@ namespace Griddler_Solver
 
         for (Int32 inHintCounter = 0; inHintCounter < hint.Count; inHintCounter++)
         {
-          if (line[indexOnLine] != CellValue.Color)
+          Int32 indexCheck = indexOnLine + inHintCounter;
+          if (indexCheck >= line.Count || line[indexOnLine + inHintCounter] != CellValue.Color)
           {
             itFits = false;
             break;
@@ -539,7 +568,15 @@ namespace Griddler_Solver
           break;
         }
 
+        if (Config.Break)
+        {
+          break;
+        }
         indexOnLine = findFirst(indexOnLine);
+        if (indexOnLine == -1)
+        {
+          break;
+        }
       }
     }
   }
