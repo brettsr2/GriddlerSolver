@@ -1,0 +1,435 @@
+{
+  "Name": "Griddlers puzzle 183521 - Snoopy",
+  "Url": "Snoopy [20x15x2] 517 | https://www.griddlers.net/nonogram/-/g/183521",
+  "Board": {
+    "HintsRow": [
+      [
+        {
+          "ColorId": 2,
+          "Count": 6
+        },
+        {
+          "ColorId": 2,
+          "Count": 11
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 4
+        },
+        {
+          "ColorId": 2,
+          "Count": 10
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 3
+        },
+        {
+          "ColorId": 2,
+          "Count": 8
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 2
+        },
+        {
+          "ColorId": 2,
+          "Count": 6
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 2
+        },
+        {
+          "ColorId": 2,
+          "Count": 3
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 1
+        },
+        {
+          "ColorId": 2,
+          "Count": 1
+        },
+        {
+          "ColorId": 2,
+          "Count": 1
+        },
+        {
+          "ColorId": 2,
+          "Count": 1
+        },
+        {
+          "ColorId": 2,
+          "Count": 1
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 3
+        },
+        {
+          "ColorId": 2,
+          "Count": 1
+        },
+        {
+          "ColorId": 2,
+          "Count": 1
+        },
+        {
+          "ColorId": 2,
+          "Count": 1
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 4
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 5
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 5
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 5
+        },
+        {
+          "ColorId": 2,
+          "Count": 1
+        },
+        {
+          "ColorId": 2,
+          "Count": 1
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 3
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 1
+        },
+        {
+          "ColorId": 2,
+          "Count": 1
+        },
+        {
+          "ColorId": 2,
+          "Count": 1
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        },
+        {
+          "ColorId": 2,
+          "Count": 5
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 2
+        },
+        {
+          "ColorId": 2,
+          "Count": 4
+        },
+        {
+          "ColorId": 2,
+          "Count": 11
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 7
+        },
+        {
+          "ColorId": 2,
+          "Count": 9
+        }
+      ]
+    ],
+    "HintsColumn": [
+      [
+        {
+          "ColorId": 2,
+          "Count": 6
+        },
+        {
+          "ColorId": 2,
+          "Count": 4
+        },
+        {
+          "ColorId": 2,
+          "Count": 3
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 5
+        },
+        {
+          "ColorId": 2,
+          "Count": 6
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 3
+        },
+        {
+          "ColorId": 2,
+          "Count": 8
+        },
+        {
+          "ColorId": 2,
+          "Count": 1
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 2
+        },
+        {
+          "ColorId": 2,
+          "Count": 6
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 1
+        },
+        {
+          "ColorId": 2,
+          "Count": 3
+        },
+        {
+          "ColorId": 2,
+          "Count": 3
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 1
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 2
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 2
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 2
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 1
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 2
+        },
+        {
+          "ColorId": 2,
+          "Count": 1
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 2
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 3
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 3
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 4
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 4
+        },
+        {
+          "ColorId": 2,
+          "Count": 2
+        },
+        {
+          "ColorId": 2,
+          "Count": 3
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 4
+        },
+        {
+          "ColorId": 2,
+          "Count": 3
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 5
+        },
+        {
+          "ColorId": 2,
+          "Count": 3
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 5
+        },
+        {
+          "ColorId": 2,
+          "Count": 4
+        }
+      ],
+      [
+        {
+          "ColorId": 2,
+          "Count": 7
+        },
+        {
+          "ColorId": 2,
+          "Count": 5
+        }
+      ]
+    ]
+  },
+  "ListColors": [
+    {
+      "HexColor": "#7F7F7F"
+    },
+    {
+      "HexColor": "#ffffff"
+    },
+    {
+      "HexColor": "#000000"
+    }
+  ]
+}
