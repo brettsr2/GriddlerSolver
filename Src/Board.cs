@@ -42,14 +42,11 @@ namespace Griddler_Solver
     {
       get
       {
-        if (row < _Board.GetLength(0) && column < _Board.GetLength(1))
-        {
-          return _Board[row, column];
-        }
-        else
-        {
-          return CellValue.Unknown;
-        }
+        return _Board[row, column];
+      }
+      set
+      {
+        _Board[row, column] = value;
       }
     }
 
@@ -74,7 +71,7 @@ namespace Griddler_Solver
     }
 
     [JsonIgnore]
-    public CellValue[,] _Board
+    private CellValue[,] _Board
     { get; set; } = new CellValue[0, 0];
 
     public CellValue[][] CurrentState

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -31,6 +32,8 @@ namespace Griddler_Solver
 
     private SolidColorBrush _BrushGrey = new(Colors.Gray);
     private SolidColorBrush _BrushBlack = new(Colors.Black);
+    private SolidColorBrush _BrushGreen = new(Colors.Green);
+    private SolidColorBrush _BrushRed = new(Colors.Red);
 
     private Int32 _MaxHintsCountRow
     {
@@ -72,6 +75,7 @@ namespace Griddler_Solver
         HintsRow = hintsRow,
         HintsColumn = hintsColumn
       };
+      Board.Init();
     }
 
     public void Draw(Canvas canvas)
@@ -178,10 +182,10 @@ namespace Griddler_Solver
         currentY += _CellSize;
       }
 
-      // board itself
       currentX = _MaxHintsCountRow * _CellSize;
       currentY = _MaxHintsCountColumn * _CellSize;
 
+      // board itself
       for (Int32 col = 0; col < Board.ColumnCount; col++)
       {
         for (Int32 row = 0; row < Board.RowCount; row++)
@@ -192,7 +196,7 @@ namespace Griddler_Solver
           createRectangle(x, y, ListColors[(Int32)value].ColorBrush);
         }
       }
-
+      // grid
       for (Int32 row = 0; row <= Board.RowCount; row++)
       {
         Double x2 = currentX + Board.ColumnCount * _CellSize;
@@ -224,6 +228,21 @@ namespace Griddler_Solver
         }
 
         createLine(x, currentY, x, y2, thickness, brush);
+      }
+      // static analysis
+      foreach (var StaticAnalysis in _ListStaticAnalysis)
+      {
+        Double x = currentX + StaticAnalysis.Column * _CellSize;
+        Double y = currentY + StaticAnalysis.Row * _CellSize;
+
+        if (StaticAnalysis.Type == StaticAnalysisType.CellBackgroundPrevious)
+        {
+          createRectangle(x, y, _BrushGreen);
+        }
+        else if (StaticAnalysis.Type == StaticAnalysisType.CellBackgroundNext)
+        {
+          createRectangle(x, y, _BrushRed);
+        }
       }
     }
 
@@ -284,8 +303,6 @@ namespace Griddler_Solver
       _IProgress = progress;
       _IProgress?.AddMessage($"Start Cells: {Board.RowCount * Board.ColumnCount}");
 
-      //Board.Init();
-
       static Int32 CalculateScore(Hint[] hints)
       {
         return hints.Length + hints.Sum(hint => hint.Count * 2);
@@ -332,9 +349,9 @@ namespace Griddler_Solver
 
       UInt64 permutationsLimit = 1000000;
 
-      Task.Run(() => StaticAnalysis());
+      StaticAnalysis(true);
+      Task.Run(() => StaticAnalysis(false));
 
-      Task.Delay(100).Wait();
       while (!Board.IsSolved)
       {
         if (Config.Break)
@@ -418,34 +435,45 @@ namespace Griddler_Solver
       Board.Iterations = iteration;
       Board.TimeTaken = stopWatchGlobal.Elapsed;
     }
-    private void StaticAnalysis()
+    private void StaticAnalysis(Boolean singleRun)
     {
       while(!Config.Break)
       {
         for (Int32 indexRow = 0; indexRow < Board.RowCount; indexRow++)
         {
-          CellValue[] row = Board.GetRow(indexRow);
-          Hint[] hints = Board.HintsRow[indexRow];
-
-          StaticAnalysisCheckLine(row, hints);
+          StaticAnalysisCheckLine(true, indexRow);
         }
         for (Int32 indexColumn = 0; indexColumn < Board.ColumnCount; indexColumn++)
         {
-          CellValue[] column = Board.GetColumn(indexColumn);
-          Hint[] hints = Board.HintsColumn[indexColumn];
-
-          StaticAnalysisCheckLine(column, hints);
+          StaticAnalysisCheckLine(false, indexColumn);
         }
 
-        Task.Delay(100).Wait();
+        if (singleRun)
+        {
+          break;
+        }
       }
     }
-    private void StaticAnalysisCheckLine(CellValue[] line, Hint[] hints)
+    private void StaticAnalysisCheckLine(Boolean isRow, Int32 index)
+    {
+      List<CellValue> line = isRow ? Board.GetRow(index).ToList() : Board.GetColumn(index).ToList();
+      List<Hint> hints = isRow ? Board.HintsRow[index].ToList() : Board.HintsColumn[index].ToList();
+      StaticAnalysisCheckLine(isRow, index, line, hints, false);
+
+      // refresh data
+      line = isRow ? Board.GetRow(index).ToList() : Board.GetColumn(index).ToList();
+      hints = isRow ? Board.HintsRow[index].ToList() : Board.HintsColumn[index].ToList();
+      line.Reverse();
+      hints.Reverse();
+      
+      StaticAnalysisCheckLine(isRow, index, line, hints, true);
+    }
+    private void StaticAnalysisCheckLine(Boolean isRow, Int32 index, List<CellValue> line, List<Hint> hints, Boolean reverted)
     {
       // find first available cell on line
-      static Int32 findFirst(CellValue[] line, Int32 indexStart)
+      Int32 findFirst(Int32 indexStart)
       {
-        for (Int32 indexLine = indexStart; indexLine < line.Length; indexLine++)
+        for (Int32 indexLine = indexStart; indexLine < line.Count; indexLine++)
         {
           if (line[indexLine] == CellValue.Color)
           {
@@ -454,10 +482,37 @@ namespace Griddler_Solver
         }
         return -1;
       }
+      Int32 indexOnLine = findFirst(0);
 
-      Int32 indexOnLine = findFirst(line, 0);
+      CellValue getCellValue(Int32 index)
+      {
+        return index >= line.Count ? CellValue.OutOfBorder : line[index];
+      }
+      void createStaticAnalysis()
+      {
+        Int32 Row = isRow ? index : indexOnLine;
+        if (isRow == false && reverted)
+        {
+          Row = Board.RowCount - 1 - Row;
+        }
+        Int32 Column = isRow ? indexOnLine : index;
+        if (isRow == true && reverted)
+        {
+          Column = Board.ColumnCount - 1 - Column;
+        }
+
+        Board[Row, Column] = CellValue.Background;
+        _ListStaticAnalysis.Add(new StaticAnalysis()
+        {
+          IsRow = isRow,
+          Row = Row,
+          Column = Column, 
+          Type = reverted ? StaticAnalysisType.CellBackgroundPrevious : StaticAnalysisType.CellBackgroundNext
+        }); 
+      }
+
       Boolean itFits = true;
-      for (Int32 indexHint = 0; indexHint < hints.Length; indexHint++)
+      for (Int32 indexHint = 0; indexHint < hints.Count; indexHint++)
       {
         Hint hint = hints[indexHint];
 
@@ -470,16 +525,21 @@ namespace Griddler_Solver
           }
         }
 
+        indexOnLine += hint.Count - 1 + 1;
         if (itFits)
         {
           hint.IsSolved = true;
+          if (getCellValue(indexOnLine) == CellValue.Unknown)
+          {
+            createStaticAnalysis();
+          }
         }
         else
         {
           break;
         }
 
-        indexOnLine = findFirst(line, indexOnLine + hint.Count + 1);
+        indexOnLine = findFirst(indexOnLine);
       }
     }
   }
