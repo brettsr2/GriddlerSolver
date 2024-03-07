@@ -35,8 +35,8 @@
           <CheckBox x:Name="checkBoxMultithread" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="True" Click="OnCheckBox_Click">Multithread</CheckBox>
           <CheckBox x:Name="checkBoxPermutationsLimit" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="True" Click="OnCheckBox_Click">Permutations limit</CheckBox>
           <CheckBox x:Name="checkBoxStaticAnalysis" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="True" Click="OnCheckBox_Click">Static analysis</CheckBox>
-          <CheckBox x:Name="checkBoxDraw" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="True" Click="OnCheckBox_Click">Draw</CheckBox>
           <Button x:Name="buttonRevert" Margin="10, 0, 0, 0" Click="OnButtonRevert_Click">Revert</Button>
+          <CheckBox x:Name="checkBoxDraw" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="False" Click="OnCheckBox_Click">Draw</CheckBox>
         </WrapPanel>
       </Grid>
     </StackPanel>

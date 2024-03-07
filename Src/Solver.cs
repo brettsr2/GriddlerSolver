@@ -306,7 +306,14 @@ namespace Griddler_Solver
     public void Solve(Config config)
     {
       Config = config;
-      Config.Progress?.AddMessage($"Start Cells: {Board.RowCount * Board.ColumnCount}");
+      Config.Progress?.AddMessage($"Start");
+      Config.Progress?.AddMessage($"Cells to solve: {Board.RowCount * Board.ColumnCount}");
+
+      if (Board.RowCount == 0 || Board.ColumnCount == 0)
+      {
+        Config.Progress?.AddMessage($"Empty board. Nothing to solve.");
+        return;
+      }
 
       static Int32 CalculateScore(Hint[] hints)
       {
@@ -352,8 +359,7 @@ namespace Griddler_Solver
 
       UInt64 permutationsLimit = Config.PermutationsLimit ? 1000000 : UInt32.MaxValue;
 
-      StaticAnalysis(true);
-      Task.Run(() => StaticAnalysis(false));
+      StaticAnalysis();
 
       while (!Board.IsSolved)
       {
@@ -415,6 +421,8 @@ namespace Griddler_Solver
           }
         });
 
+        StaticAnalysis();
+
         Config.Progress?.AddDebugMessage($"Iteration {iteration}");
         foreach (SolverLine solverLine in listSolverLine)
         {
@@ -438,14 +446,14 @@ namespace Griddler_Solver
       Board.Iterations = iteration;
       Board.TimeTaken = stopWatchGlobal.Elapsed;
     }
-    private void StaticAnalysis(Boolean singleRun)
+    private void StaticAnalysis()
     {
       if (Config.StaticAnalysisEnabled == false)
       {
         return;
       }
 
-      while(!Config.Break)
+      //while(!Config.Break)
       {
         for (Int32 indexRow = 0; indexRow < Board.RowCount; indexRow++)
         {
@@ -462,11 +470,6 @@ namespace Griddler_Solver
             break;
           }
           StaticAnalysisCheckLine(false, indexColumn);
-        }
-
-        if (singleRun)
-        {
-          break;
         }
       }
     }

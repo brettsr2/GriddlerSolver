@@ -36,9 +36,9 @@ namespace Griddler_Solver
       InitializeComponent();
 
 #if DEBUG
-      Title += " DEBUG";
+      Title += " - DEBUG";
 #else
-      Title += " RELEASE";
+      Title += " - RELEASE";
 #endif
       comboBoxUrl.Items.Add("Buddha [36x35x2] 42337 | https://www.griddlers.net/nonogram/-/g/268876");
       comboBoxUrl.Items.Add("Snoopy [20x15x2] 517 | https://www.griddlers.net/nonogram/-/g/183521");
@@ -209,7 +209,7 @@ namespace Griddler_Solver
     private void OnButtonRevert_Click(object sender, RoutedEventArgs e)
     {
       Boolean isChecked = checkBoxScoreSorting.IsChecked == true;
-      checkBoxScoreSorting.IsChecked = checkBoxMultithread.IsChecked = checkBoxPermutationsLimit.IsChecked = checkBoxStaticAnalysis.IsChecked = checkBoxDraw.IsChecked = !isChecked;
+      checkBoxScoreSorting.IsChecked = checkBoxMultithread.IsChecked = checkBoxPermutationsLimit.IsChecked = checkBoxStaticAnalysis.IsChecked = !isChecked;
     }
 
     private void OnCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
