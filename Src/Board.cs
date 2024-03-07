@@ -11,7 +11,7 @@ namespace Griddler_Solver
     {
       get
       {
-        if (_Board.GetLength(0) != RowCount || _Board.GetLength(1) != ColumnCount)
+        if (RowCount == 0 || ColumnCount == 0)
         {
           return false;
         }

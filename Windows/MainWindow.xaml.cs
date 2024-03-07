@@ -37,6 +37,8 @@ namespace Griddler_Solver
 
 #if DEBUG
       Title += " DEBUG";
+#else
+      Title += " RELEASE";
 #endif
       comboBoxUrl.Items.Add("Buddha [36x35x2] 42337 | https://www.griddlers.net/nonogram/-/g/268876");
       comboBoxUrl.Items.Add("Snoopy [20x15x2] 517 | https://www.griddlers.net/nonogram/-/g/183521");
