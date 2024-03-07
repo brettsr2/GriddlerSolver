@@ -87,6 +87,24 @@ namespace Griddler_Solver
       }
     }
 
+    public void Clear()
+    {
+      Init();
+      foreach (Hint[] hints in HintsRow)
+      {
+        foreach (Hint hint in hints)
+        {
+          hint.IsSolved = false;
+        }
+      }
+      foreach (Hint[] hints in HintsColumn)
+      {
+        foreach (var hint in hints)
+        {
+          hint.IsSolved = false;
+        }
+      }
+    }
     public void Init()
     {
       _Board = new CellValue[RowCount, ColumnCount];

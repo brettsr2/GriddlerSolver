@@ -60,10 +60,11 @@ namespace Griddler_Solver
       label.Content = stringBuilder.ToString();
 
       canvas.Children.Clear();
+      canvas.Children.Add(label);
       _Solver.Draw(canvas);
     }
 
-    private void OnSolve_Click(object sender, RoutedEventArgs e)
+    private void OnButtonSolve_Click(object sender, RoutedEventArgs e)
     {
 #if DEBUG
       if (File.Exists(_LogFile))
@@ -72,12 +73,24 @@ namespace Griddler_Solver
       }
 #endif
 
+      Config config  = new Config()
+      {
+        Name = Name,
+        Draw = checkBoxDraw.IsChecked == true,
+        Progress = this,
+        ScoreSortingEnabled = checkBoxScoreSorting.IsChecked == true,
+        MultithreadEnabled = checkBoxMultithread.IsChecked == true,
+        StaticAnalysisEnabled = checkBoxStaticAnalysis.IsChecked == true,
+      };
+
+      IsEnabled = false;
+
       _ProgressWindow = new(this);
       _ProgressWindow.Show();
 
       Task.Run(() =>
       {
-        _Solver.Solve(this);
+        _Solver.Solve(config);
         Completed();
       });
     }
@@ -192,7 +205,11 @@ namespace Griddler_Solver
     {
       Draw();
     }
-
+    private void OnCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+      _Solver.Clear();
+      Draw();
+    }
     private void OnComboBoxUrl_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
       if (!SettingComboBox)
@@ -213,7 +230,10 @@ namespace Griddler_Solver
           _ProgressWindow.textBoxOutput.AppendText(message + Environment.NewLine);
           _ProgressWindow.textBoxOutput.ScrollToEnd();
 
-          Draw();
+          if (_Solver.Config.Draw)
+          {
+            Draw();
+          }
         }
       }));
     }
@@ -226,6 +246,7 @@ namespace Griddler_Solver
       }
 #endif
     }
+
     public void Completed()
     {
       Dispatcher.Invoke(new Action(() =>
@@ -234,6 +255,7 @@ namespace Griddler_Solver
         AddMessage($"End");
 
         _ProgressWindow = null;
+        IsEnabled = true;
 
         Draw();
       }));

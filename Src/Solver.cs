@@ -60,7 +60,6 @@ namespace Griddler_Solver
     [JsonIgnore]
     public Config Config
     { get; set; } = new();
-    private IProgress? _IProgress = null;
 
     private List<StaticAnalysis> _ListStaticAnalysis = [];
     #endregion // solving
@@ -78,6 +77,11 @@ namespace Griddler_Solver
       Board.Init();
     }
 
+    public void Clear()
+    {
+      Board.Clear();
+      _ListStaticAnalysis = [];
+    }
     public void Draw(Canvas canvas)
     {
       if (Board.RowCount != 0 && Board.ColumnCount != 0)
@@ -296,22 +300,18 @@ namespace Griddler_Solver
       Int64 memoryPercent = (memoryInfo.MemoryLoadBytes * 100) / memoryInfo.TotalAvailableMemoryBytes;
       stringBuilder.Append($" memory: {memoryPercent}%");
 
-      _IProgress?.AddMessage(stringBuilder.ToString());
+      Config.Progress?.AddMessage(stringBuilder.ToString());
     }
-    public void Solve(IProgress progress)
+
+    public void Solve(Config config)
     {
-      _IProgress = progress;
-      _IProgress?.AddMessage($"Start Cells: {Board.RowCount * Board.ColumnCount}");
+      Config = config;
+      Config.Progress?.AddMessage($"Start Cells: {Board.RowCount * Board.ColumnCount}");
 
       static Int32 CalculateScore(Hint[] hints)
       {
         return hints.Length + hints.Sum(hint => hint.Count * 2);
       }
-
-      Config = new Config()
-      {
-        Name = Name,
-      };
 
       List<SolverLine> listSolverLine = [];
       for (Int32 row = 0; row < Board.RowCount; row++)
@@ -338,11 +338,14 @@ namespace Griddler_Solver
       }
       List<SolverLine> listSolverLineOrigin = new(listSolverLine);
 
-      listSolverLine.Sort(delegate (SolverLine line1, SolverLine line2)
+      if (Config.ScoreSortingEnabled)
       {
-        //return line1.MaxPermutationsCount.CompareTo(line2.MaxPermutationsCount);
-        return -line1.Score.CompareTo(line2.Score);
-      });
+        listSolverLine.Sort(delegate (SolverLine line1, SolverLine line2)
+        {
+          //return line1.MaxPermutationsCount.CompareTo(line2.MaxPermutationsCount);
+          return -line1.Score.CompareTo(line2.Score);
+        });
+      }
 
       Stopwatch stopWatchGlobal = Stopwatch.StartNew();
       Int32 iteration = 0;
@@ -381,7 +384,7 @@ namespace Griddler_Solver
         Boolean changed = false;
         UInt64 permutationsMinLimit = UInt64.MaxValue;
 
-        var options = new ParallelOptions { MaxDegreeOfParallelism = -1 };
+        var options = new ParallelOptions { MaxDegreeOfParallelism = Config.MultithreadEnabled ? -1 : 1 };
         Parallel.ForEach(listSolverLine, options, solverLine =>
         {
           if (Config.Break)
@@ -395,7 +398,7 @@ namespace Griddler_Solver
           if (maxPermutationsCount > permutationsLimit)
           {
             permutationsMinLimit = Math.Min(permutationsMinLimit, maxPermutationsCount);
-            _IProgress?.AddDebugMessage($"{solverLine} skipped, permutations limit {permutationsLimit}");
+            Config.Progress?.AddDebugMessage($"{solverLine} skipped, permutations limit {permutationsLimit}");
             return;
           }
 
@@ -412,10 +415,10 @@ namespace Griddler_Solver
           }
         });
 
-        _IProgress?.AddDebugMessage($"Iteration {iteration}");
+        Config.Progress?.AddDebugMessage($"Iteration {iteration}");
         foreach (SolverLine solverLine in listSolverLine)
         {
-          _IProgress?.AddDebugMessage(solverLine.ToString());
+          Config.Progress?.AddDebugMessage(solverLine.ToString());
         }
 
         if (changed == false)
@@ -437,6 +440,11 @@ namespace Griddler_Solver
     }
     private void StaticAnalysis(Boolean singleRun)
     {
+      if (Config.StaticAnalysisEnabled == false)
+      {
+        return;
+      }
+
       while(!Config.Break)
       {
         for (Int32 indexRow = 0; indexRow < Board.RowCount; indexRow++)

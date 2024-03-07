@@ -6,15 +6,18 @@
         xmlns:local="clr-namespace:Griddler_Solver"
         mc:Ignorable="d"
         Title="MainWindow" Width="1024" Height="780" WindowStartupLocation="CenterScreen">
-    <Grid>
+  <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="auto" />
       <RowDefinition Height="*" />
       <RowDefinition Height="auto" />
-      <RowDefinition Height="auto" />
     </Grid.RowDefinitions>
     <StackPanel Grid.Row="0">
       <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="auto" />
+          <RowDefinition Height="auto" />
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="Auto"/>
           <ColumnDefinition/>
@@ -27,12 +30,19 @@
         <Button Grid.Column="2" Margin="5 0 0 0" MinWidth="100" Content="Download" Click="OnButtonDownload_Click"></Button>
         <Button Grid.Column="3" Margin="10 0 0 0" MinWidth="100" Content="Save" Click="OnButtonSave_Click"></Button>
         <Button Grid.Column="4" Margin="5 0 5 0" MinWidth="100" Content="Load" Click="OnButtonLoad_Click"></Button>
+        <WrapPanel Grid.Row="1" Grid.ColumnSpan="5">
+          <CheckBox x:Name="checkBoxScoreSorting" Margin="10, 0, 0, 0" IsChecked="True" Click="OnCheckBox_Click">Score sorting</CheckBox>
+          <CheckBox x:Name="checkBoxMultithread" Margin="10, 0, 0, 0" IsChecked="True" Click="OnCheckBox_Click">Multithread</CheckBox>
+          <CheckBox x:Name="checkBoxStaticAnalysis" Margin="10, 0, 0, 0" IsChecked="True" Click="OnCheckBox_Click">Static analysis</CheckBox>
+          <CheckBox x:Name="checkBoxDraw" Margin="10, 0, 0, 0" IsChecked="True" Click="OnCheckBox_Click">Draw</CheckBox>
+        </WrapPanel>
       </Grid>
     </StackPanel>
-    <Canvas x:Name="canvas" Grid.Row="1" SizeChanged="OnCanvas_SizeChanged" />
-    <StackPanel Grid.Row="1" >
+    <Canvas x:Name="canvas" Grid.Row="1" ClipToBounds="True" SizeChanged="OnCanvas_SizeChanged">
       <Label x:Name="label"></Label>
+    </Canvas>
+    <StackPanel Grid.Row="2">
+      <Button x:Name="buttonSolve" MinHeight="26" Content="Solve" Click="OnButtonSolve_Click" />
     </StackPanel>
-    <Button x:Name="solve" Grid.Row="3" MinHeight="26" Content="Solve" Click="OnSolve_Click" />
   </Grid>
 </Window>
