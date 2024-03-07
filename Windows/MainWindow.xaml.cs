@@ -35,6 +35,9 @@ namespace Griddler_Solver
     {
       InitializeComponent();
 
+#if DEBUG
+      Title += " DEBUG";
+#endif
       comboBoxUrl.Items.Add("Buddha [36x35x2] 42337 | https://www.griddlers.net/nonogram/-/g/268876");
       comboBoxUrl.Items.Add("Snoopy [20x15x2] 517 | https://www.griddlers.net/nonogram/-/g/183521");
       comboBoxUrl.Items.Add("Tree in a Vase [40x65x2] 170266 | https://www.griddlers.net/nonogram/-/g/276087");
@@ -80,6 +83,7 @@ namespace Griddler_Solver
         Progress = this,
         ScoreSortingEnabled = checkBoxScoreSorting.IsChecked == true,
         MultithreadEnabled = checkBoxMultithread.IsChecked == true,
+        PermutationsLimit = checkBoxPermutationsLimit.IsChecked == true,
         StaticAnalysisEnabled = checkBoxStaticAnalysis.IsChecked == true,
       };
 
@@ -199,6 +203,11 @@ namespace Griddler_Solver
 
         Draw();
       }
+    }
+    private void OnButtonRevert_Click(object sender, RoutedEventArgs e)
+    {
+      Boolean isChecked = checkBoxScoreSorting.IsChecked == true;
+      checkBoxScoreSorting.IsChecked = checkBoxMultithread.IsChecked = checkBoxPermutationsLimit.IsChecked = checkBoxStaticAnalysis.IsChecked = checkBoxDraw.IsChecked = !isChecked;
     }
 
     private void OnCanvas_SizeChanged(object sender, SizeChangedEventArgs e)

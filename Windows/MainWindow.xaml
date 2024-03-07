@@ -31,10 +31,12 @@
         <Button Grid.Column="3" Margin="10 0 0 0" MinWidth="100" Content="Save" Click="OnButtonSave_Click"></Button>
         <Button Grid.Column="4" Margin="5 0 5 0" MinWidth="100" Content="Load" Click="OnButtonLoad_Click"></Button>
         <WrapPanel Grid.Row="1" Grid.ColumnSpan="5">
-          <CheckBox x:Name="checkBoxScoreSorting" Margin="10, 0, 0, 0" IsChecked="True" Click="OnCheckBox_Click">Score sorting</CheckBox>
-          <CheckBox x:Name="checkBoxMultithread" Margin="10, 0, 0, 0" IsChecked="True" Click="OnCheckBox_Click">Multithread</CheckBox>
-          <CheckBox x:Name="checkBoxStaticAnalysis" Margin="10, 0, 0, 0" IsChecked="True" Click="OnCheckBox_Click">Static analysis</CheckBox>
-          <CheckBox x:Name="checkBoxDraw" Margin="10, 0, 0, 0" IsChecked="True" Click="OnCheckBox_Click">Draw</CheckBox>
+          <CheckBox x:Name="checkBoxScoreSorting" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="True" Click="OnCheckBox_Click">Score sorting</CheckBox>
+          <CheckBox x:Name="checkBoxMultithread" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="True" Click="OnCheckBox_Click">Multithread</CheckBox>
+          <CheckBox x:Name="checkBoxPermutationsLimit" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="True" Click="OnCheckBox_Click">Permutations limit</CheckBox>
+          <CheckBox x:Name="checkBoxStaticAnalysis" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="True" Click="OnCheckBox_Click">Static analysis</CheckBox>
+          <CheckBox x:Name="checkBoxDraw" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="True" Click="OnCheckBox_Click">Draw</CheckBox>
+          <Button x:Name="buttonRevert" Margin="10, 0, 0, 0" Click="OnButtonRevert_Click">Revert</Button>
         </WrapPanel>
       </Grid>
     </StackPanel>

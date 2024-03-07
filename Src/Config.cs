@@ -22,6 +22,8 @@ namespace Griddler_Solver
     { get; set; }
     public Boolean MultithreadEnabled
     { get; set; }
+    public Boolean PermutationsLimit
+    { get; set; }
     public Boolean StaticAnalysisEnabled
     { get; set; }
   }

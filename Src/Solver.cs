@@ -350,7 +350,7 @@ namespace Griddler_Solver
       Stopwatch stopWatchGlobal = Stopwatch.StartNew();
       Int32 iteration = 0;
 
-      UInt64 permutationsLimit = 1000000;
+      UInt64 permutationsLimit = Config.PermutationsLimit ? 1000000 : UInt32.MaxValue;
 
       StaticAnalysis(true);
       Task.Run(() => StaticAnalysis(false));
