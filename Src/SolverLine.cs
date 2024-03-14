@@ -83,6 +83,9 @@ namespace Griddler_Solver
     public Boolean IsSolved
     { get; set; } = false;
 
+    public Int32 IterationOfGenerating
+    { get; set; } = 0;
+
     private List<CellValue[]> _CurrentLinePermutations = [];
 
     public void Solve()
@@ -170,13 +173,10 @@ namespace Griddler_Solver
       }
 
       Int32 begIndex = 0;
-      if (Config.PermutationsLimit)
+      /*if (Config.PermutationsLimit)
       {
-        while (begIndex < lineOrigin.Length && lineOrigin[begIndex] == CellValue.Background)
-        {
-          begIndex++;
-        }
-      }
+        begIndex = FindLastFitIndex(lineOrigin, hints);
+      }*/
 
       CellValue[] line = new CellValue[lineOrigin.Length];
       GeneratePermutations(lineOrigin, line, begIndex, new Queue<Hint>(hints));
@@ -275,6 +275,53 @@ namespace Griddler_Solver
       }
     }
 
+    private Int32 FindFirst(CellValue[] line, Int32 indexStart)
+    {
+      for (Int32 indexLine = indexStart; indexLine < line.Length; indexLine++)
+      {
+        if (line[indexLine] == CellValue.Background)
+        {
+          continue;
+        }
+        else
+        {
+          return -1; // indexLine;
+        }
+      }
+
+      return -1;
+    }
+    private Int32 FindLastFitIndex(CellValue[] line, Hint[] hints)
+    {
+      // TODO mazat hints a oriznout i z konce
+      Int32 indexOnLine = FindFirst(line, 0);
+      if (indexOnLine == -1)
+      {
+        return 0;
+      }
+
+      for (Int32 indexHint = 0; indexHint < hints.Length; indexHint++)
+      {
+        Hint hint = hints[indexHint];
+        if (!hint.IsSolved)
+        {
+          return indexOnLine;
+        }
+
+        indexOnLine += hint.Count - 1 + 1;
+
+        Int32 indexOnLineNew = FindFirst(line, indexOnLine);
+        if (indexOnLineNew == -1)
+        {
+          break;
+        }
+
+        indexOnLine = indexOnLineNew;
+      }
+
+      return indexOnLine;
+    }
+
     public Boolean IsLineFull(CellValue[] line)
     {
       foreach (CellValue value in line)
@@ -293,7 +340,19 @@ namespace Griddler_Solver
       UInt64 percentFirst = FirstPermutationsCount * 100 / MaxPermutationsCount;
       UInt64 percentCurrent = CurrentPermutationsCount * 100 / MaxPermutationsCount;
 
-      return $"{(IsRow ? "Row:" : "Column:")} {Number} - Score: {Score} - MaxPermCount: {MaxPermutationsCount} FirstPermCount: {FirstPermutationsCount}({percentFirst}%) CurrentPermCount: {CurrentPermutationsCount}({percentCurrent}%)";
+      StringBuilder stringBuilder = new StringBuilder();
+
+      stringBuilder.Append($"{(IsRow ? "Row:" : "Column:")} {Number} ");
+      stringBuilder.Append($"Score: {Score} ");
+      stringBuilder.Append($"MaxPermCount: {MaxPermutationsCount} ");
+      if (FirstPermutationsCount > 0)
+      {
+        stringBuilder.Append($"Iteration: {IterationOfGenerating} ");
+        stringBuilder.Append($"FirstPermCount: {FirstPermutationsCount}({percentFirst}%) ");
+      }
+      stringBuilder.Append($"CurrentPermCount: {CurrentPermutationsCount}({percentCurrent}%) ");
+
+      return stringBuilder.ToString();
     }
   }
 }

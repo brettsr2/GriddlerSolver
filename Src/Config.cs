@@ -27,6 +27,9 @@ namespace Griddler_Solver
     public Boolean StaticAnalysisEnabled
     { get; set; }
 
+    public Boolean StepMode
+    { get; set; }
+
     public Int64 TicksCurrentIteration
     { get; set; } = DateTime.Now.Ticks;
     public Int64 TicksStart

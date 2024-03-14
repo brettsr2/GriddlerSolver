@@ -16,5 +16,10 @@ namespace Griddler_Solver.Windows
     {
       _Progress?.ProgressWindowClosed();
     }
+
+    private void OnButtonCancel_Click(object sender, RoutedEventArgs e)
+    {
+      _Progress?.ProgressWindowClosed();
+    }
   }
 }

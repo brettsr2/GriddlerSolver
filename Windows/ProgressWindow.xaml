@@ -6,7 +6,12 @@
         xmlns:local="clr-namespace:Griddler_Solver.Windows"
         mc:Ignorable="d"
         Title="ProgressWindow" Height="450" Width="800" WindowStartupLocation="CenterScreen" Closed="Window_Closed">
-    <Grid>
-        <TextBox x:Name="textBoxOutput" VerticalScrollBarVisibility="Auto"></TextBox>
-    </Grid>
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*" />
+      <RowDefinition Height="auto" />
+    </Grid.RowDefinitions>
+    <TextBox x:Name="textBoxOutput" Grid.Row="0" VerticalScrollBarVisibility="Auto"></TextBox>
+    <Button x:Name="buttonCancel" Grid.Row="1" Click="OnButtonCancel_Click">Cancel</Button>
+  </Grid>
 </Window>

@@ -87,6 +87,7 @@ namespace Griddler_Solver
         MultithreadEnabled = checkBoxMultithread.IsChecked == true,
         PermutationsLimit = checkBoxPermutationsLimit.IsChecked == true,
         StaticAnalysisEnabled = checkBoxStaticAnalysis.IsChecked == true,
+        StepMode = checkBoxStepMode.IsChecked == true,
       };
 
       IsEnabled = false;
@@ -206,7 +207,12 @@ namespace Griddler_Solver
         Draw();
       }
     }
-    private void OnButtonRevert_Click(object sender, RoutedEventArgs e)
+    private void OnButtonClearBoard_Click(object sender, RoutedEventArgs e)
+    {
+      _Solver.Clear();
+      Draw();
+    }
+    private void OnButtonInvert_Click(object sender, RoutedEventArgs e)
     {
       Boolean isChecked = checkBoxScoreSorting.IsChecked == true;
       checkBoxScoreSorting.IsChecked = checkBoxMultithread.IsChecked = checkBoxPermutationsLimit.IsChecked = checkBoxStaticAnalysis.IsChecked = !isChecked;
@@ -214,11 +220,6 @@ namespace Griddler_Solver
 
     private void OnCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-      Draw();
-    }
-    private void OnCheckBox_Click(object sender, RoutedEventArgs e)
-    {
-      _Solver.Clear();
       Draw();
     }
     private void OnComboBoxUrl_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
