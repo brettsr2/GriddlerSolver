@@ -10,7 +10,7 @@
 
   internal enum StaticAnalysisType
   {
-    CellBackgroundPrevious,
-    CellBackgroundNext,
+    SolvedBackground,
+    SolvedColor,
   }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 
 namespace Griddler_Solver
 {
@@ -168,14 +169,32 @@ namespace Griddler_Solver
         return;
       }
 
+      Int32 begIndex = 0;
+      if (Config.PermutationsLimit)
+      {
+        while (begIndex < lineOrigin.Length && lineOrigin[begIndex] == CellValue.Background)
+        {
+          begIndex++;
+        }
+      }
+
       CellValue[] line = new CellValue[lineOrigin.Length];
-      GeneratePermutations(lineOrigin, line, 0, new Queue<Hint>(hints));
+      GeneratePermutations(lineOrigin, line, begIndex, new Queue<Hint>(hints));
     }
     private void GeneratePermutations(CellValue[] lineOrigin, CellValue[] line, int startIdx, Queue<Hint> hints)
     {
       if (Config.Break)
       {
         return;
+      }
+
+      TimeSpan timeSpanCurrentIteration = TimeSpan.FromTicks(DateTime.Now.Ticks - Config.TicksCurrentIteration);
+      if (timeSpanCurrentIteration.TotalSeconds >= 10)
+      {
+        Config.TicksCurrentIteration = DateTime.Now.Ticks;
+
+        TimeSpan timeSpanStart = TimeSpan.FromTicks(DateTime.Now.Ticks - Config.TicksStart);
+        Config.Progress?.AddMessage($"[{timeSpanStart.ToString(Solver.TimeFormat)}] {ToString()}");
       }
 
       if (hints.Count == 0)
@@ -274,7 +293,7 @@ namespace Griddler_Solver
       UInt64 percentFirst = FirstPermutationsCount * 100 / MaxPermutationsCount;
       UInt64 percentCurrent = CurrentPermutationsCount * 100 / MaxPermutationsCount;
 
-      return $"{(IsRow ? "Row" : "Column")} {Number} - {Score} - {MaxPermutationsCount}/{FirstPermutationsCount}({percentFirst}%)/{CurrentPermutationsCount}({percentCurrent}%)";
+      return $"{(IsRow ? "Row:" : "Column:")} {Number} - Score: {Score} - MaxPermCount: {MaxPermutationsCount} FirstPermCount: {FirstPermutationsCount}({percentFirst}%) CurrentPermCount: {CurrentPermutationsCount}({percentCurrent}%)";
     }
   }
 }

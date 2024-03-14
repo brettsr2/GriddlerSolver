@@ -32,8 +32,6 @@ namespace Griddler_Solver
 
     private SolidColorBrush _BrushGrey = new(Colors.Gray);
     private SolidColorBrush _BrushBlack = new(Colors.Black);
-    private SolidColorBrush _BrushGreen = new(Colors.Green);
-    private SolidColorBrush _BrushRed = new(Colors.Red);
 
     private Int32 _MaxHintsCountRow
     {
@@ -239,14 +237,7 @@ namespace Griddler_Solver
         Double x = currentX + StaticAnalysis.Column * _CellSize;
         Double y = currentY + StaticAnalysis.Row * _CellSize;
 
-        if (StaticAnalysis.Type == StaticAnalysisType.CellBackgroundPrevious)
-        {
-          createRectangle(x, y, _BrushGreen);
-        }
-        else if (StaticAnalysis.Type == StaticAnalysisType.CellBackgroundNext)
-        {
-          createRectangle(x, y, _BrushRed);
-        }
+        createCross(x, y, _BrushGrey);
       }
     }
 
@@ -373,9 +364,6 @@ namespace Griddler_Solver
         iteration++;
         UInt64 currentPermutationsCount = 0;
 
-        DateTime dateTime = DateTime.Now;
-        Int32 dateTimeOfIteration = 0;
-
         List<SolverLine> listSolverLineFiltered = new List<SolverLine>(listSolverLine.Count);
         foreach (SolverLine solverLine in listSolverLine)
         {
@@ -389,6 +377,8 @@ namespace Griddler_Solver
 
         Boolean changed = false;
         UInt64 permutationsMinLimit = UInt64.MaxValue;
+
+        Config.TicksCurrentIteration = DateTime.Now.Ticks;
 
         var options = new ParallelOptions { MaxDegreeOfParallelism = Config.MultithreadEnabled ? -1 : 1 };
         Parallel.ForEach(listSolverLine, options, solverLine =>
@@ -411,14 +401,6 @@ namespace Griddler_Solver
           solverLine.Solve();
           currentPermutationsCount += solverLine.CurrentPermutationsCount;
           changed |= solverLine.Changed;
-
-          if ((DateTime.Now - dateTime).TotalSeconds > 5)
-          {
-            PrintIterationStatistic(iteration, currentPermutationsCount, permutationsLimit, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
-
-            dateTime = DateTime.Now;
-            dateTimeOfIteration = iteration;
-          }
         });
 
         StaticAnalysis();
@@ -435,10 +417,7 @@ namespace Griddler_Solver
         }
 
         stopWatchIteration.Stop();
-        if (dateTimeOfIteration != iteration || (DateTime.Now - dateTime).TotalSeconds > 1)
-        {
-          PrintIterationStatistic(iteration, currentPermutationsCount, permutationsLimit, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
-        }
+        PrintIterationStatistic(iteration, currentPermutationsCount, permutationsLimit, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
       }
 
       Config.Break = true;
@@ -453,24 +432,21 @@ namespace Griddler_Solver
         return;
       }
 
-      //while(!Config.Break)
+      for (Int32 indexRow = 0; indexRow < Board.RowCount; indexRow++)
       {
-        for (Int32 indexRow = 0; indexRow < Board.RowCount; indexRow++)
+        if (Config.Break)
         {
-          if (Config.Break)
-          {
-            break;
-          }
-          StaticAnalysisCheckLine(true, indexRow);
+          break;
         }
-        for (Int32 indexColumn = 0; indexColumn < Board.ColumnCount; indexColumn++)
+        StaticAnalysisCheckLine(true, indexRow);
+      }
+      for (Int32 indexColumn = 0; indexColumn < Board.ColumnCount; indexColumn++)
+      {
+        if (Config.Break)
         {
-          if (Config.Break)
-          {
-            break;
-          }
-          StaticAnalysisCheckLine(false, indexColumn);
+          break;
         }
+        StaticAnalysisCheckLine(false, indexColumn);
       }
     }
     private void StaticAnalysisCheckLine(Boolean isRow, Int32 index)
@@ -521,7 +497,7 @@ namespace Griddler_Solver
       {
         return index >= line.Count ? CellValue.OutOfBorder : line[index];
       }
-      void createStaticAnalysis()
+      void createStaticAnalysis(Boolean setColor, Int32 indexOnLine)
       {
         Int32 Row = isRow ? index : indexOnLine;
         if (isRow == false && reverted)
@@ -534,13 +510,26 @@ namespace Griddler_Solver
           Column = Board.ColumnCount - 1 - Column;
         }
 
-        Board[Row, Column] = CellValue.Background;
+        CellValue cellValue;
+        StaticAnalysisType type;
+        if (setColor)
+        {
+          cellValue = CellValue.Color;
+          type = StaticAnalysisType.SolvedColor;
+        }
+        else
+        {
+          cellValue = CellValue.Background;
+          type = StaticAnalysisType.SolvedBackground;
+        }
+
+        Board[Row, Column] = cellValue;
         _ListStaticAnalysis.Add(new StaticAnalysis()
         {
           IsRow = isRow,
           Row = Row,
-          Column = Column, 
-          Type = reverted ? StaticAnalysisType.CellBackgroundPrevious : StaticAnalysisType.CellBackgroundNext
+          Column = Column,
+          Type = type
         });
 
         //if (_ListStaticAnalysis.Count == 50)
@@ -558,7 +547,11 @@ namespace Griddler_Solver
         for (Int32 inHintCounter = 0; inHintCounter < hint.Count; inHintCounter++)
         {
           Int32 indexCheck = indexOnLine + inHintCounter;
-          if (indexCheck >= line.Count || line[indexOnLine + inHintCounter] != CellValue.Color)
+          if (line[indexOnLine + inHintCounter] == CellValue.Unknown)
+          {
+            createStaticAnalysis(true, indexOnLine + inHintCounter);
+          }
+          else if (indexCheck >= line.Count || line[indexOnLine + inHintCounter] != CellValue.Color)
           {
             itFits = false;
             break;
@@ -571,7 +564,7 @@ namespace Griddler_Solver
           hint.IsSolved = true;
           if (getCellValue(indexOnLine) == CellValue.Unknown)
           {
-            createStaticAnalysis();
+            createStaticAnalysis(false, indexOnLine);
           }
         }
         else
@@ -587,6 +580,18 @@ namespace Griddler_Solver
         if (indexOnLine == -1)
         {
           break;
+        }
+      }
+
+      Boolean allHintsSolved = hints.All(hint => hint.IsSolved);
+      if (allHintsSolved)
+      {
+        for (int i = 0; i < line.Count; i++)
+        {
+          if (line[i] == CellValue.Unknown)
+          {
+            createStaticAnalysis(false, i);
+          }
         }
       }
     }

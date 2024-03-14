@@ -26,5 +26,10 @@ namespace Griddler_Solver
     { get; set; }
     public Boolean StaticAnalysisEnabled
     { get; set; }
+
+    public Int64 TicksCurrentIteration
+    { get; set; } = DateTime.Now.Ticks;
+    public Int64 TicksStart
+    { get; set; } = DateTime.Now.Ticks;
   }
 }
