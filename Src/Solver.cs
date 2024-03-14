@@ -262,7 +262,7 @@ namespace Griddler_Solver
       return max;
     }
 
-    private void PrintIterationStatistic(Int32 iteration, UInt64 generatedPermutations, UInt64 permutationsLimit, TimeSpan globalElapsed, TimeSpan iterationElapsed)
+    private void PrintIterationStatistic(Int32 iteration, UInt64 currentPermutationsCount, UInt64 permutationsLimit, TimeSpan globalElapsed, TimeSpan iterationElapsed)
     {
       Int32 unknownCount = 0, blankCount = 0, filledCount = 0;
 
@@ -293,7 +293,7 @@ namespace Griddler_Solver
       stringBuilder.Append($"[{iteration}]");
       stringBuilder.Append($"[{iterationElapsed.ToString(TimeFormat)}]");
       stringBuilder.Append($" Unknown: {unknownCount} ({percentUnknown}%) Blank: {blankCount} Filled: {filledCount}");
-      stringBuilder.Append($" Permutations: {generatedPermutations}");
+      stringBuilder.Append($" Permutations: {currentPermutationsCount}");
       stringBuilder.Append($" Permutations limit: {permutationsLimit}");
 
       var memoryInfo = GC.GetGCMemoryInfo();
@@ -371,7 +371,7 @@ namespace Griddler_Solver
         Stopwatch stopWatchIteration = Stopwatch.StartNew();
         
         iteration++;
-        UInt64 generatedPermutations = 0;
+        UInt64 currentPermutationsCount = 0;
 
         DateTime dateTime = DateTime.Now;
         Int32 dateTimeOfIteration = 0;
@@ -409,12 +409,12 @@ namespace Griddler_Solver
           }
 
           solverLine.Solve();
-          generatedPermutations += solverLine.CurrentPermutationsCount;
+          currentPermutationsCount += solverLine.CurrentPermutationsCount;
           changed |= solverLine.Changed;
 
           if ((DateTime.Now - dateTime).TotalSeconds > 5)
           {
-            PrintIterationStatistic(iteration, generatedPermutations, permutationsLimit, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
+            PrintIterationStatistic(iteration, currentPermutationsCount, permutationsLimit, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
 
             dateTime = DateTime.Now;
             dateTimeOfIteration = iteration;
@@ -437,7 +437,7 @@ namespace Griddler_Solver
         stopWatchIteration.Stop();
         if (dateTimeOfIteration != iteration || (DateTime.Now - dateTime).TotalSeconds > 1)
         {
-          PrintIterationStatistic(iteration, generatedPermutations, permutationsLimit, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
+          PrintIterationStatistic(iteration, currentPermutationsCount, permutationsLimit, stopWatchGlobal.Elapsed, stopWatchIteration.Elapsed);
         }
       }
 

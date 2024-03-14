@@ -139,10 +139,11 @@ namespace Griddler_Solver
 
       Merge(clone, _CurrentLinePermutations);
 
-      //if (_CurrentLinePermutations.Count > 10000000)
+      if (Config.PermutationsLimit == false)
       {
-        //_CurrentLinePermutations = [];
+        _CurrentLinePermutations = [];
       }
+
       return clone;
     }
 
