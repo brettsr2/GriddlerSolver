@@ -380,33 +380,36 @@ namespace Griddler_Solver
 
         Config.TicksCurrentIteration = DateTime.Now.Ticks;
 
-        var options = new ParallelOptions { MaxDegreeOfParallelism = Config.MultithreadEnabled ? -1 : 1 };
-        Parallel.ForEach(listSolverLine, options, solverLine =>
+        if (Config.ThreadsEnabled)
         {
-          if (Config.Break)
+          var options = new ParallelOptions { MaxDegreeOfParallelism = Config.MultithreadEnabled ? -1 : 1 };
+          Parallel.ForEach(listSolverLine, options, solverLine =>
           {
-            return;
-          }
+            if (Config.Break)
+            {
+              return;
+            }
 
-          Thread.CurrentThread.Name = "SolverLine " + solverLine.ToString();
+            Thread.CurrentThread.Name = "SolverLine " + solverLine.ToString();
 
-          UInt64 maxPermutationsCount = solverLine.MaxPermutationsCount;
-          if (maxPermutationsCount > permutationsLimit)
-          {
-            permutationsMinLimit = Math.Min(permutationsMinLimit, maxPermutationsCount);
-            Config.Progress?.AddDebugMessage($"{solverLine} skipped, permutations limit {permutationsLimit}");
-            return;
-          }
+            UInt64 maxPermutationsCount = solverLine.MaxPermutationsCount;
+            if (maxPermutationsCount > permutationsLimit)
+            {
+              permutationsMinLimit = Math.Min(permutationsMinLimit, maxPermutationsCount);
+              Config.Progress?.AddDebugMessage($"{solverLine} skipped, permutations limit {permutationsLimit}");
+              return;
+            }
 
-          if (solverLine.IterationOfGenerating == 0)
-          {
-            solverLine.IterationOfGenerating = iteration;
-          }
+            if (solverLine.IterationOfGenerating == 0)
+            {
+              solverLine.IterationOfGenerating = iteration;
+            }
 
-          solverLine.Solve();
-          currentPermutationsCount += solverLine.CurrentPermutationsCount;
-          changed |= solverLine.Changed;
-        });
+            solverLine.Solve();
+            currentPermutationsCount += solverLine.CurrentPermutationsCount;
+            changed |= solverLine.Changed;
+          });
+        }
 
         StaticAnalysis();
 

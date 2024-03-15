@@ -98,6 +98,7 @@ namespace Griddler_Solver
         Draw = checkBoxDraw.IsChecked == true,
         Progress = this,
         ScoreSortingEnabled = checkBoxScoreSorting.IsChecked == true,
+        ThreadsEnabled = checkBoxThreads.IsChecked == true,
         MultithreadEnabled = checkBoxMultithread.IsChecked == true,
         PermutationsLimit = checkBoxPermutationsLimit.IsChecked == true,
         StaticAnalysisEnabled = checkBoxStaticAnalysis.IsChecked == true,

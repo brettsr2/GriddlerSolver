@@ -18,6 +18,19 @@ namespace Griddler_Solver
       }
     }
 
+    [ConfigurationProperty("CheckBoxThreads", DefaultValue = true)]
+    public Boolean CheckBoxThreads
+    {
+      get
+      {
+        return (Boolean)this["CheckBoxThreads"];
+      }
+      set
+      {
+        this["CheckBoxThreads"] = value;
+      }
+    }
+
     [ConfigurationProperty("CheckBoxMultithread", DefaultValue = true)]
     public Boolean CheckBoxMultithread
     {

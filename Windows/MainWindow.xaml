@@ -32,10 +32,11 @@
         <Button Grid.Column="4" Margin="5 0 5 0" MinWidth="100" Content="Load" Click="OnButtonLoad_Click"></Button>
         <WrapPanel Grid.Row="1" Grid.ColumnSpan="5">
           <CheckBox x:Name="checkBoxScoreSorting" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxScoreSorting}">Score sorting</CheckBox>
-          <CheckBox x:Name="checkBoxMultithread" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxMultithread}">Multithread</CheckBox>
+          <CheckBox x:Name="checkBoxThreads" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxThreads}">Threads</CheckBox>
+          <CheckBox x:Name="checkBoxMultithread" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxMultithread}">Multithreads</CheckBox>
           <CheckBox x:Name="checkBoxPermutationsLimit" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxPermutationsLimit}">Permutations limit</CheckBox>
           <CheckBox x:Name="checkBoxStaticAnalysis" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxStaticAnalysis}">Static analysis</CheckBox>
-          <Button x:Name="buttonInvert" Click="OnButtonInvert_Click" Content="Invert options"/>
+          <Button x:Name="buttonInvert" Margin="10, 0, 0, 0" Click="OnButtonInvert_Click" Content="Invert options"/>
           <Button x:Name="buttonClearBoard" Margin="10, 0, 0, 0" Click="OnButtonClearBoard_Click" Content="Clear board"/>
           <CheckBox x:Name="checkBoxDraw" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="False">Draw</CheckBox>
           <CheckBox x:Name="checkBoxStepMode" VerticalAlignment="Center" IsChecked="False" Content="Step mode"/>
