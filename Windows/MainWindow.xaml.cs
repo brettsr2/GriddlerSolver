@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -31,9 +32,19 @@ namespace Griddler_Solver
     private Boolean SettingComboBox
     { get; set; }
 
+    const String UI_SETTINGS = "UISettings";
+    Configuration _AppConfig = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+
     public MainWindow()
     {
       InitializeComponent();
+
+      if (_AppConfig.Sections[UI_SETTINGS] == null)
+      {
+        _AppConfig.Sections.Add(UI_SETTINGS, new UISetting());
+      }
+
+      DataContext = _AppConfig.Sections[UI_SETTINGS];
 
 #if DEBUG
       Title += " - DEBUG";
@@ -275,6 +286,11 @@ namespace Griddler_Solver
     public void ProgressWindowClosed()
     {
       _Solver.Config.Break = true;
+    }
+
+    private void OnWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+      _AppConfig.Save();
     }
   }
 }

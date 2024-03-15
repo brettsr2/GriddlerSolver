@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Griddler_Solver"
         mc:Ignorable="d"
-        Title="Nonogram solver" Width="1024" Height="780" WindowStartupLocation="CenterScreen">
+        Title="Nonogram solver" Width="1024" Height="780" WindowStartupLocation="CenterScreen" Closing="OnWindow_Closing">
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="auto" />
@@ -31,10 +31,10 @@
         <Button Grid.Column="3" Margin="10 0 0 0" MinWidth="100" Content="Save" Click="OnButtonSave_Click"></Button>
         <Button Grid.Column="4" Margin="5 0 5 0" MinWidth="100" Content="Load" Click="OnButtonLoad_Click"></Button>
         <WrapPanel Grid.Row="1" Grid.ColumnSpan="5">
-          <CheckBox x:Name="checkBoxScoreSorting" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="True">Score sorting</CheckBox>
-          <CheckBox x:Name="checkBoxMultithread" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="True">Multithread</CheckBox>
-          <CheckBox x:Name="checkBoxPermutationsLimit" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="True">Permutations limit</CheckBox>
-          <CheckBox x:Name="checkBoxStaticAnalysis" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="True">Static analysis</CheckBox>
+          <CheckBox x:Name="checkBoxScoreSorting" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxScoreSorting}">Score sorting</CheckBox>
+          <CheckBox x:Name="checkBoxMultithread" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxMultithread}">Multithread</CheckBox>
+          <CheckBox x:Name="checkBoxPermutationsLimit" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxPermutationsLimit}">Permutations limit</CheckBox>
+          <CheckBox x:Name="checkBoxStaticAnalysis" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxStaticAnalysis}">Static analysis</CheckBox>
           <Button x:Name="buttonInvert" Click="OnButtonInvert_Click" Content="Invert options"/>
           <Button x:Name="buttonClearBoard" Margin="10, 0, 0, 0" Click="OnButtonClearBoard_Click" Content="Clear board"/>
           <CheckBox x:Name="checkBoxDraw" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="False">Draw</CheckBox>
