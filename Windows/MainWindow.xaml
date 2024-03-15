@@ -39,7 +39,7 @@
           <Button x:Name="buttonInvert" Margin="10, 0, 0, 0" Click="OnButtonInvert_Click" Content="Invert options"/>
           <Button x:Name="buttonClearBoard" Margin="10, 0, 0, 0" Click="OnButtonClearBoard_Click" Content="Clear board"/>
           <CheckBox x:Name="checkBoxDraw" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="False">Draw</CheckBox>
-          <CheckBox x:Name="checkBoxStepMode" VerticalAlignment="Center" IsChecked="False" Content="Step mode"/>
+          <CheckBox x:Name="checkBoxStepMode" VerticalAlignment="Center" IsChecked="{Binding CheckBoxStepMode}" Content="Step mode"/>
         </WrapPanel>
       </Grid>
     </StackPanel>

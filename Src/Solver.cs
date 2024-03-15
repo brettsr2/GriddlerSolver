@@ -481,8 +481,14 @@ namespace Griddler_Solver
     }
     private void StaticAnalysisCheckLine(Boolean isRow, Int32 index, CellValue[] line, Hint[] hints, Boolean reverted)
     {
+      Boolean allHintsSolved = hints.All(hint => hint.IsSolved);
+      if (allHintsSolved)
+      {
+        return;
+      }
+
       // find first available cell on line
-      Int32 findFirst(Int32 indexStart)
+      Int32 findFirstOrNext(Int32 indexStart)
       {
         for (Int32 indexLine = indexStart; indexLine < line.Length; indexLine++)
         {
@@ -490,25 +496,14 @@ namespace Griddler_Solver
           {
             continue;
           }
-          else if (line[indexLine] == CellValue.Color)
+          else
           {
             return indexLine;
           }
-          else
-          {
-            break;
-          }
         }
 
-        return -1;
+        throw new NotSupportedException();
       }
-
-      Int32 indexOnLine = findFirst(0);
-      if (indexOnLine == -1)
-      {
-        return;
-      }
-
       CellValue getCellValue(Int32 index)
       {
         return index >= line.Length ? CellValue.OutOfBorder : line[index];
@@ -551,55 +546,88 @@ namespace Griddler_Solver
         });
       }
 
-      Boolean itFits = true;
+      Int32 indexOnLine = findFirstOrNext(0);
 
+      Boolean itFits = true;
       for (Int32 indexHint = 0; indexHint < hints.Length; indexHint++)
       {
         Hint hint = hints[indexHint];
         if (!hint.IsSolved)
         {
-          for (Int32 inHintCounter = 0; inHintCounter < hint.Count; inHintCounter++)
+          Boolean startsWithUnknown = line[indexOnLine] == CellValue.Unknown;
+          if (startsWithUnknown)
           {
-            Int32 indexCheck = indexOnLine + inHintCounter;
-            if (line[indexCheck] == CellValue.Unknown)
+            // check unknown cell before solved hint
+            for (Int32 inHintCounter = 0; inHintCounter < hint.Count; inHintCounter++)
             {
-              createStaticAnalysis(true, line, indexCheck);
+              indexOnLine++;
+              if (getCellValue(indexOnLine) != CellValue.Color)
+              {
+                itFits = false;
+                break;
+              }
             }
-            else if (indexCheck >= line.Length || line[indexCheck] != CellValue.Color)
+
+            if (itFits)
             {
-              itFits = false;
-              break;
+              indexOnLine++;
+              if (getCellValue(indexOnLine) == CellValue.Background)
+              {
+                createStaticAnalysis(false, line, indexOnLine - hint.Count - 1);
+                hint.IsSolved = true;
+              }
             }
           }
-        }
-
-        indexOnLine += hint.Count - 1 + 1;
-        if (itFits)
-        {
-          hint.IsSolved = true;
-          if (getCellValue(indexOnLine) == CellValue.Unknown)
+          else
           {
-            createStaticAnalysis(false, line, indexOnLine);
+            Debug.Assert(line[indexOnLine] == CellValue.Color);
+            // check continuos hint and unknown cell after solved hint
+            for (Int32 inHintCounter = 1; inHintCounter < hint.Count; inHintCounter++)
+            {
+              indexOnLine++;
+              if (getCellValue(indexOnLine) == CellValue.Unknown)
+              {
+                createStaticAnalysis(true, line, indexOnLine);
+              }
+              else if (getCellValue(indexOnLine) != CellValue.Color)
+              {
+                itFits = false;
+                break;
+              }
+            }
+            if (itFits)
+            {
+              indexOnLine++;
+              if (getCellValue(indexOnLine) == CellValue.Unknown)
+              {
+                createStaticAnalysis(false, line, indexOnLine);
+              }
+              hint.IsSolved = true;
+            }
           }
         }
         else
         {
-          break;
+          indexOnLine += hint.Count;
         }
 
         if (Config.Break)
         {
           break;
         }
-
-        indexOnLine = findFirst(indexOnLine);
-        if (indexOnLine == -1)
+        if (itFits == false)
         {
           break;
         }
+        if (indexOnLine == line.Length)
+        {
+          break;
+        }
+
+        indexOnLine = findFirstOrNext(indexOnLine);
       }
 
-      Boolean allHintsSolved = hints.All(hint => hint.IsSolved);
+      allHintsSolved = hints.All(hint => hint.IsSolved);
       if (allHintsSolved)
       {
         for (int indexCell = 0; indexCell < line.Length; indexCell++)

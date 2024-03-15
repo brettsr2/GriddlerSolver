@@ -69,5 +69,18 @@ namespace Griddler_Solver
         this["CheckBoxStaticAnalysis"] = value;
       }
     }
+
+    [ConfigurationProperty("CheckBoxStepMode", DefaultValue = false)]
+    public Boolean CheckBoxStepMode
+    {
+      get
+      {
+        return (Boolean)this["CheckBoxStepMode"];
+      }
+      set
+      {
+        this["CheckBoxStepMode"] = value;
+      }
+    }
   }
 }
