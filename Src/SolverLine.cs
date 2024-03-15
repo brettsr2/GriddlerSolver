@@ -9,6 +9,16 @@ namespace Griddler_Solver
 {
   internal class SolverLine
   {
+    class FindResult
+    {
+      public Int32 BegIndex
+      { get; set; }
+      public Int32 EndIndex
+      { get; set; }
+      public Hint[] Hints
+      { get; set; } = Array.Empty<Hint>();
+    };
+
     public Config Config
     { get; set; } = new Config();
 
@@ -173,12 +183,18 @@ namespace Griddler_Solver
       }
 
       Int32 begIndex = 0;
-      /*if (Config.PermutationsLimit)
+      if (Config.PermutationsLimit)
       {
-        begIndex = FindLastFitIndex(lineOrigin, hints);
-      }*/
+        FindResult? findResult = FindLastFitIndex(lineOrigin, hints);
+        if (findResult != null)
+        {
+          //begIndex = findResult.BegIndex;
+          //hints = findResult.Hints;
+        }
+      }
 
       CellValue[] line = new CellValue[lineOrigin.Length];
+      //CellValue[] line = (CellValue[])lineOrigin.Clone();
       GeneratePermutations(lineOrigin, line, begIndex, new Queue<Hint>(hints));
     }
     private void GeneratePermutations(CellValue[] lineOrigin, CellValue[] line, int startIdx, Queue<Hint> hints)
@@ -217,7 +233,6 @@ namespace Griddler_Solver
       {
         var clone = (CellValue[])line.Clone();
         FillCells(clone, i, hint.Count, (CellValue)hint.ColorId);
-
         GeneratePermutations(lineOrigin, clone, i + hint.Count + 1, new Queue<Hint>(hints));
       }
     }
@@ -269,9 +284,12 @@ namespace Griddler_Solver
     {
       Debug.Assert(numberOfCells > 0);
 
-      for (int i = indexStart; i < indexStart + numberOfCells; i++)
+      for (Int32 index = indexStart; index < indexStart + numberOfCells; index++)
       {
-        line[i] = value;
+        if (line[index] == CellValue.Unknown)
+        {
+          line[index] = value;
+        }
       }
     }
 
@@ -285,19 +303,20 @@ namespace Griddler_Solver
         }
         else
         {
-          return -1; // indexLine;
+          return indexLine;
         }
       }
 
       return -1;
     }
-    private Int32 FindLastFitIndex(CellValue[] line, Hint[] hints)
+    private FindResult? FindLastFitIndex(CellValue[] line, Hint[] hints)
     {
-      // TODO mazat hints a oriznout i z konce
+      List<Hint> listHints = new List<Hint>(hints);
+
       Int32 indexOnLine = FindFirst(line, 0);
       if (indexOnLine == -1)
       {
-        return 0;
+        return null;
       }
 
       for (Int32 indexHint = 0; indexHint < hints.Length; indexHint++)
@@ -305,9 +324,10 @@ namespace Griddler_Solver
         Hint hint = hints[indexHint];
         if (!hint.IsSolved)
         {
-          return indexOnLine;
+          break;
         }
 
+        listHints.Remove(hint);
         indexOnLine += hint.Count - 1 + 1;
 
         Int32 indexOnLineNew = FindFirst(line, indexOnLine);
@@ -319,7 +339,11 @@ namespace Griddler_Solver
         indexOnLine = indexOnLineNew;
       }
 
-      return indexOnLine;
+      return new FindResult()
+      {
+        BegIndex = indexOnLine,
+        Hints = listHints.ToArray(),
+      };
     }
 
     public Boolean IsLineFull(CellValue[] line)
