@@ -8,7 +8,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
-
+using System.Windows.Media;
 using Griddler_Solver.Windows;
 
 using Microsoft.Win32;
@@ -38,6 +38,9 @@ namespace Griddler_Solver
     public MainWindow()
     {
       InitializeComponent();
+
+      Left = (SystemParameters.PrimaryScreenWidth - 2 * Width) / 2;
+      Top = (SystemParameters.PrimaryScreenHeight - Height) / 2;
 
       if (_AppConfig.Sections[UI_SETTINGS] == null)
       {
@@ -104,6 +107,14 @@ namespace Griddler_Solver
       IsEnabled = false;
 
       _ProgressWindow = new(this);
+      
+      _ProgressWindow.Width = Width;
+      _ProgressWindow.Height = Height;
+
+      Rect rect = VisualTreeHelper.GetDescendantBounds(this);
+      _ProgressWindow.Left = Left + rect.Width;
+      _ProgressWindow.Top = Top;
+      
       _ProgressWindow.Show();
 
       Task.Run(() =>

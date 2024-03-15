@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Griddler_Solver"
         mc:Ignorable="d"
-        Title="Nonogram solver" Width="1024" Height="780" WindowStartupLocation="CenterScreen" Closing="OnWindow_Closing">
+        Title="Nonogram solver" Width="1024" Height="780" Closing="OnWindow_Closing">
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="auto" />
