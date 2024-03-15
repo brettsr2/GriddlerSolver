@@ -103,11 +103,13 @@ namespace Griddler_Solver
       Changed = false;
       if (IsRow)
       {
-        Board.MergeRow(Index, Solve(Board.GetRow(Index), Hints));
+        var row = Solve(Board.GetRow(Index), Hints);
+        Board.MergeRow(Index, row);
       }
       else
       {
-        Board.MergeColumn(Index, Solve(Board.GetColumn(Index), Hints));
+        var column = Solve(Board.GetColumn(Index), Hints);
+        Board.MergeColumn(Index, column);
       }
     }
     private CellValue[] Solve(CellValue[] line, Hint[] hints)
@@ -193,11 +195,13 @@ namespace Griddler_Solver
         }
       }
 
-      CellValue[] line = new CellValue[lineOrigin.Length];
-      //CellValue[] line = (CellValue[])lineOrigin.Clone();
-      GeneratePermutations(lineOrigin, line, begIndex, new Queue<Hint>(hints));
+      //CellValue[] line = new CellValue[lineOrigin.Length];
+      CellValue[] line = (CellValue[])lineOrigin.Clone();
+
+      Int32 maxHintCellCount = hints.Sum(h => h.Count);
+      GeneratePermutations(lineOrigin, line, begIndex, new Queue<Hint>(hints), maxHintCellCount);
     }
-    private void GeneratePermutations(CellValue[] lineOrigin, CellValue[] line, int startIdx, Queue<Hint> hints)
+    private void GeneratePermutations(CellValue[] lineOrigin, CellValue[] line, int startIdx, Queue<Hint> hints, Int32 maxHintCellCount)
     {
       if (Config.Break)
       {
@@ -232,8 +236,10 @@ namespace Griddler_Solver
       for (int i = startIdx; i < maxStartingIndex; i++)
       {
         var clone = (CellValue[])line.Clone();
-        FillCells(clone, i, hint.Count, (CellValue)hint.ColorId);
-        GeneratePermutations(lineOrigin, clone, i + hint.Count + 1, new Queue<Hint>(hints));
+        if (FillCells(clone, i, hint.Count, (CellValue)hint.ColorId, maxHintCellCount))
+        {
+          GeneratePermutations(lineOrigin, clone, i + hint.Count + 1, new Queue<Hint>(hints), maxHintCellCount);
+        }
       }
     }
 
@@ -280,17 +286,29 @@ namespace Griddler_Solver
         }
       }
     }
-    private void FillCells(CellValue[] line, Int32 indexStart, Int32 numberOfCells, CellValue value)
+    private Boolean FillCells(CellValue[] line, Int32 indexStart, Int32 numberOfCells, CellValue value, Int32 maxHintCellCount)
     {
       Debug.Assert(numberOfCells > 0);
-
+      
       for (Int32 index = indexStart; index < indexStart + numberOfCells; index++)
       {
-        if (line[index] == CellValue.Unknown)
+        if (line[index] == CellValue.Background) // wrong permutation
         {
-          line[index] = value;
+          return false;
+        }
+        line[index] = value;
+      }
+
+      Int32 hintCellCount = 0;
+      foreach (CellValue cellValue in line)
+      {
+        if (cellValue == CellValue.Color)
+        {
+          hintCellCount++;
         }
       }
+
+      return hintCellCount <= maxHintCellCount;
     }
 
     private Int32 FindFirst(CellValue[] line, Int32 indexStart)
