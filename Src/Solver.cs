@@ -502,7 +502,7 @@ namespace Griddler_Solver
           }
         }
 
-        throw new NotSupportedException();
+        return -1;
       }
       CellValue getCellValue(Int32 index)
       {
@@ -619,12 +619,12 @@ namespace Griddler_Solver
         {
           break;
         }
-        if (indexOnLine == line.Length)
+
+        indexOnLine = findFirstOrNext(indexOnLine);
+        if (indexOnLine == -1)
         {
           break;
         }
-
-        indexOnLine = findFirstOrNext(indexOnLine);
       }
 
       allHintsSolved = hints.All(hint => hint.IsSolved);

@@ -239,7 +239,7 @@ namespace Griddler_Solver
     private void OnButtonInvert_Click(object sender, RoutedEventArgs e)
     {
       Boolean isChecked = checkBoxScoreSorting.IsChecked == true;
-      checkBoxScoreSorting.IsChecked = checkBoxMultithread.IsChecked = checkBoxPermutationsLimit.IsChecked = checkBoxStaticAnalysis.IsChecked = !isChecked;
+      checkBoxScoreSorting.IsChecked = checkBoxThreads.IsChecked = checkBoxMultithread.IsChecked = checkBoxPermutationsLimit.IsChecked = checkBoxStaticAnalysis.IsChecked = !isChecked;
     }
 
     private void OnCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
