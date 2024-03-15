@@ -106,6 +106,7 @@ namespace Griddler_Solver
 
       IsEnabled = false;
 
+      _ProgressWindow?.Close();
       _ProgressWindow = new(this);
       
       _ProgressWindow.Width = Width;
@@ -288,7 +289,6 @@ namespace Griddler_Solver
         AddMessage($"Iterations: {_Solver.Board.Iterations}, Time elapsed: {_Solver.Board.TimeTaken.ToString(Solver.TimeFormat)}");
         AddMessage($"End");
 
-        _ProgressWindow = null;
         IsEnabled = true;
 
         Draw();
@@ -301,6 +301,7 @@ namespace Griddler_Solver
 
     private void OnWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
+      _ProgressWindow?.Close();
       _AppConfig.Save();
     }
   }
