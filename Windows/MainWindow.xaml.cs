@@ -98,7 +98,7 @@ namespace Griddler_Solver
         Draw = checkBoxDraw.IsChecked == true,
         Progress = this,
         ScoreSortingEnabled = checkBoxScoreSorting.IsChecked == true,
-        ThreadsEnabled = checkBoxThreads.IsChecked == true,
+        PermutationAnalysisEnabled = checkBoxPermutationAnalysis.IsChecked == true,
         MultithreadEnabled = checkBoxMultithread.IsChecked == true,
         PermutationsLimit = checkBoxPermutationsLimit.IsChecked == true,
         StaticAnalysisEnabled = checkBoxStaticAnalysis.IsChecked == true,
@@ -239,7 +239,7 @@ namespace Griddler_Solver
     private void OnButtonInvert_Click(object sender, RoutedEventArgs e)
     {
       Boolean isChecked = checkBoxScoreSorting.IsChecked == true;
-      checkBoxScoreSorting.IsChecked = checkBoxThreads.IsChecked = checkBoxMultithread.IsChecked = checkBoxPermutationsLimit.IsChecked = checkBoxStaticAnalysis.IsChecked = !isChecked;
+      checkBoxScoreSorting.IsChecked = checkBoxPermutationAnalysis.IsChecked = checkBoxMultithread.IsChecked = checkBoxPermutationsLimit.IsChecked = checkBoxStaticAnalysis.IsChecked = !isChecked;
     }
 
     private void OnCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -304,6 +304,20 @@ namespace Griddler_Solver
     {
       _ProgressWindow?.Close();
       _AppConfig.Save();
+    }
+
+    private void OnCanvas_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+      Double originX = _Solver.MaxHintsCountRow * _Solver.CellSize;
+      Double originY = _Solver.MaxHintsCountColumn * _Solver.CellSize;
+
+      Point point = e.GetPosition(canvas);
+      Double x = point.X - originX;
+      Double y = point.Y - originY;
+
+      Int32 row = (Int32)(x / _Solver.CellSize) + 1;
+      Int32 column = (Int32)(y / _Solver.CellSize) + 1;
+      labelCoordinates.Content = $"Row: {row}, Column: {column}";
     }
   }
 }

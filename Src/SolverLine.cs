@@ -184,21 +184,22 @@ namespace Griddler_Solver
         return;
       }
 
+      Int32 maxHintCellCount = hints.Sum(h => h.Count);
+
       Int32 begIndex = 0;
       if (Config.PermutationsLimit)
       {
         FindResult? findResult = FindLastFitIndex(lineOrigin, hints);
         if (findResult != null)
         {
-          //begIndex = findResult.BegIndex;
-          //hints = findResult.Hints;
+          begIndex = findResult.BegIndex;
+          hints = findResult.Hints;
         }
       }
 
       //CellValue[] line = new CellValue[lineOrigin.Length];
       CellValue[] line = (CellValue[])lineOrigin.Clone();
 
-      Int32 maxHintCellCount = hints.Sum(h => h.Count);
       GeneratePermutations(lineOrigin, line, begIndex, new Queue<Hint>(hints), maxHintCellCount);
     }
     private void GeneratePermutations(CellValue[] lineOrigin, CellValue[] line, int startIdx, Queue<Hint> hints, Int32 maxHintCellCount)

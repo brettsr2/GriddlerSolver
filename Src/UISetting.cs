@@ -18,16 +18,16 @@ namespace Griddler_Solver
       }
     }
 
-    [ConfigurationProperty("CheckBoxThreads", DefaultValue = true)]
-    public Boolean CheckBoxThreads
+    [ConfigurationProperty("CheckBoxPermutaionAnalysis", DefaultValue = true)]
+    public Boolean CheckBoxPermutaionAnalysis
     {
       get
       {
-        return (Boolean)this["CheckBoxThreads"];
+        return (Boolean)this["CheckBoxPermutaionAnalysis"];
       }
       set
       {
-        this["CheckBoxThreads"] = value;
+        this["CheckBoxPermutaionAnalysis"] = value;
       }
     }
 

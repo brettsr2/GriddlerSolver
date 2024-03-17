@@ -20,7 +20,7 @@ namespace Griddler_Solver
 
     public Boolean ScoreSortingEnabled
     { get; set; }
-    public Boolean ThreadsEnabled
+    public Boolean PermutationAnalysisEnabled
     { get; set; }
     public Boolean MultithreadEnabled
     { get; set; }

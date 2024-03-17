@@ -33,14 +33,14 @@ namespace Griddler_Solver
     private SolidColorBrush _BrushGrey = new(Colors.Gray);
     private SolidColorBrush _BrushBlack = new(Colors.Black);
 
-    private Int32 _MaxHintsCountRow
+    public Int32 MaxHintsCountRow
     {
       get
       {
         return GetMaxItemCount(Board.HintsRow);
       }
     }
-    private Int32 _MaxHintsCountColumn
+    public Int32 MaxHintsCountColumn
     {
       get
       {
@@ -48,7 +48,8 @@ namespace Griddler_Solver
       }
     }
 
-    private Double _CellSize = 15;
+    public Double CellSize
+    { get; set; } = 15;
 
     public List<PuzzleColors> ListColors
     { get; set; } = [];
@@ -84,9 +85,9 @@ namespace Griddler_Solver
     {
       if (Board.RowCount != 0 && Board.ColumnCount != 0)
       {
-        _CellSize = Math.Min(canvas.ActualHeight / (_MaxHintsCountColumn + Board.RowCount), canvas.ActualWidth / (_MaxHintsCountRow + Board.ColumnCount));
+        CellSize = Math.Min(canvas.ActualHeight / (MaxHintsCountColumn + Board.RowCount), canvas.ActualWidth / (MaxHintsCountRow + Board.ColumnCount));
       }
-      Double FontSize = _CellSize * 0.8;
+      Double FontSize = CellSize * 0.8;
 
       Action<Double, Double, SolidColorBrush> createRectangle = (left, top, brush) =>
       {
@@ -96,8 +97,8 @@ namespace Griddler_Solver
         rect.Stroke = brush;
         rect.Fill = brush;
 
-        rect.Width = _CellSize;
-        rect.Height = _CellSize;
+        rect.Width = CellSize;
+        rect.Height = CellSize;
 
         Canvas.SetLeft(rect, left);
         Canvas.SetTop(rect, top);
@@ -136,56 +137,56 @@ namespace Griddler_Solver
       };
       Action<Double, Double, SolidColorBrush> createCross = (left, top, brush) =>
       {
-        createLine(left, top, left + _CellSize, top + _CellSize, 1, brush);
-        createLine(left + _CellSize, top, left, top + _CellSize, 1, brush);
+        createLine(left, top, left + CellSize, top + CellSize, 1, brush);
+        createLine(left + CellSize, top, left, top + CellSize, 1, brush);
       };
 
       Double currentX, currentY;
 
-      currentX = _MaxHintsCountRow * _CellSize;
+      currentX = MaxHintsCountRow * CellSize;
       for (Int32 col = 0; col < Board.ColumnCount; col++)
       {
         Hint[] list = Board.HintsColumn[col];
-        currentY = (_MaxHintsCountColumn - list.Length) * _CellSize;
+        currentY = (MaxHintsCountColumn - list.Length) * CellSize;
 
         foreach (Hint hint in list)
         {
           createRectangle(currentX, currentY, ListColors[hint.ColorId].ColorBrush);
-          createText(currentX + _CellSize / 2, currentY + _CellSize / 2, hint.Count.ToString(), ListColors[1].ColorBrush);
+          createText(currentX + CellSize / 2, currentY + CellSize / 2, hint.Count.ToString(), ListColors[1].ColorBrush);
           if (hint.IsSolved)
           {
             createCross(currentX, currentY, _BrushGrey);
           }
 
-          currentY += _CellSize;
+          currentY += CellSize;
         }
 
-        currentX += _CellSize;
+        currentX += CellSize;
       }
 
-      currentY = _MaxHintsCountColumn * _CellSize;
+      currentY = MaxHintsCountColumn * CellSize;
       for (Int32 row = 0; row < Board.RowCount; row++)
       {
         Hint[] list = Board.HintsRow[row];
-        currentX = (_MaxHintsCountRow - list.Length) * _CellSize;
+        currentX = (MaxHintsCountRow - list.Length) * CellSize;
 
         foreach (Hint hint in list)
         {
           createRectangle(currentX, currentY, ListColors[hint.ColorId].ColorBrush);
-          createText(currentX + _CellSize / 2, currentY + _CellSize / 2, hint.Count.ToString(), ListColors[1].ColorBrush);
+          createText(currentX + CellSize / 2, currentY + CellSize / 2, hint.Count.ToString(), ListColors[1].ColorBrush);
           if (hint.IsSolved)
           {
             createCross(currentX, currentY, _BrushGrey);
           }
 
-          currentX += _CellSize;
+          currentX += CellSize;
         }
 
-        currentY += _CellSize;
+        currentY += CellSize;
       }
 
-      currentX = _MaxHintsCountRow * _CellSize;
-      currentY = _MaxHintsCountColumn * _CellSize;
+      currentX = MaxHintsCountRow * CellSize;
+      currentY = MaxHintsCountColumn * CellSize;
 
       // board itself
       for (Int32 col = 0; col < Board.ColumnCount; col++)
@@ -193,16 +194,16 @@ namespace Griddler_Solver
         for (Int32 row = 0; row < Board.RowCount; row++)
         {
           CellValue value = Board[row, col];
-          Double x = currentX + col * _CellSize;
-          Double y = currentY + row * _CellSize;
+          Double x = currentX + col * CellSize;
+          Double y = currentY + row * CellSize;
           createRectangle(x, y, ListColors[(Int32)value].ColorBrush);
         }
       }
       // grid
       for (Int32 row = 0; row <= Board.RowCount; row++)
       {
-        Double x2 = currentX + Board.ColumnCount * _CellSize;
-        Double y = currentY + row * _CellSize;
+        Double x2 = currentX + Board.ColumnCount * CellSize;
+        Double y = currentY + row * CellSize;
 
         SolidColorBrush brush = _BrushGrey;
         Double thickness = 1;
@@ -217,8 +218,8 @@ namespace Griddler_Solver
       }
       for (Int32 col = 0; col <= Board.ColumnCount; col++)
       {
-        Double x = currentX + col * _CellSize;
-        Double y2 = currentY + Board.RowCount * _CellSize;
+        Double x = currentX + col * CellSize;
+        Double y2 = currentY + Board.RowCount * CellSize;
 
         SolidColorBrush brush = _BrushGrey;
         Double thickness = 1;
@@ -234,8 +235,8 @@ namespace Griddler_Solver
       // static analysis
       foreach (var StaticAnalysis in _ListStaticAnalysis)
       {
-        Double x = currentX + StaticAnalysis.Column * _CellSize;
-        Double y = currentY + StaticAnalysis.Row * _CellSize;
+        Double x = currentX + StaticAnalysis.Column * CellSize;
+        Double y = currentY + StaticAnalysis.Row * CellSize;
 
         createCross(x, y, _BrushGrey);
       }
@@ -380,7 +381,7 @@ namespace Griddler_Solver
 
         Config.TicksCurrentIteration = DateTime.Now.Ticks;
 
-        if (Config.ThreadsEnabled)
+        if (Config.PermutationAnalysisEnabled)
         {
           var options = new ParallelOptions { MaxDegreeOfParallelism = Config.MultithreadEnabled ? -1 : 1 };
           Parallel.ForEach(listSolverLine, options, solverLine =>
