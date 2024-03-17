@@ -116,7 +116,7 @@ namespace Griddler_Solver
 
       lock (_Lock)
       {
-        for (int row = 0; row < column.Length; row++)
+        for (Int32 row = 0; row < column.Length; row++)
         {
           column[row] = _Board[row, indexColumn];
         }

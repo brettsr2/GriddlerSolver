@@ -165,7 +165,7 @@ namespace Griddler_Solver
         return;
       }
 
-      static Hint[][] ParseJsonInput(List<List<List<int>>> listItems)
+      static Hint[][] ParseJsonInput(List<List<List<Int32>>> listItems)
       {
         Hint[][] hints = new Hint[listItems.Count][];
         for (Int32 index = 0; index < listItems.Count; index++)

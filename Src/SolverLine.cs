@@ -165,10 +165,10 @@ namespace Griddler_Solver
 
     private Boolean IsPermutationValid(CellValue[] line, CellValue[] permutation)
     {
-      for (int i = 0; i < permutation.Length; i++)
+      for (Int32 index = 0; index < permutation.Length; index++)
       {
-        CellValue cellValue = line[i];
-        CellValue cellValuePermutation = permutation[i];
+        CellValue cellValue = line[index];
+        CellValue cellValuePermutation = permutation[index];
         if (cellValue != CellValue.Unknown && cellValue != cellValuePermutation)
         {
           return false;
@@ -199,10 +199,9 @@ namespace Griddler_Solver
 
       //CellValue[] line = new CellValue[lineOrigin.Length];
       CellValue[] line = (CellValue[])lineOrigin.Clone();
-
       GeneratePermutations(lineOrigin, line, begIndex, new Queue<Hint>(hints), maxHintCellCount);
     }
-    private void GeneratePermutations(CellValue[] lineOrigin, CellValue[] line, int startIdx, Queue<Hint> hints, Int32 maxHintCellCount)
+    private void GeneratePermutations(CellValue[] lineOrigin, CellValue[] line, Int32 startIdx, Queue<Hint> hints, Int32 maxHintCellCount)
     {
       if (Config.Break)
       {
@@ -232,14 +231,13 @@ namespace Griddler_Solver
       var hint = hints.Dequeue();
 
       // This maximum index this hint can be and still fit the others on
-      int maxStartingIndex = line.Length - hints.Sum(h => h.Count) - hints.Count - hint.Count + 1;
-
-      for (int i = startIdx; i < maxStartingIndex; i++)
+      Int32 maxStartingIndex = line.Length - hints.Sum(h => h.Count) - hints.Count - hint.Count + 1;
+      for (Int32 index = startIdx; index < maxStartingIndex; index++)
       {
         var clone = (CellValue[])line.Clone();
-        if (FillCells(clone, i, hint.Count, (CellValue)hint.ColorId, maxHintCellCount))
+        if (FillCells(clone, index, hint.Count, (CellValue)hint.ColorId, maxHintCellCount))
         {
-          GeneratePermutations(lineOrigin, clone, i + hint.Count + 1, new Queue<Hint>(hints), maxHintCellCount);
+          GeneratePermutations(lineOrigin, clone, index + hint.Count + 1, new Queue<Hint>(hints), maxHintCellCount);
         }
       }
     }
@@ -279,11 +277,11 @@ namespace Griddler_Solver
 
     private void FillEmptyCells(CellValue[] line)
     {
-      for (int i = 0; i < line.Length; i++)
+      for (Int32 index = 0; index < line.Length; index++)
       {
-        if (line[i] == CellValue.Unknown)
+        if (line[index] == CellValue.Unknown)
         {
-          line[i] = CellValue.Background;
+          line[index] = CellValue.Background;
         }
       }
     }

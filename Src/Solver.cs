@@ -631,7 +631,7 @@ namespace Griddler_Solver
       allHintsSolved = hints.All(hint => hint.IsSolved);
       if (allHintsSolved)
       {
-        for (int indexCell = 0; indexCell < line.Length; indexCell++)
+        for (Int32 indexCell = 0; indexCell < line.Length; indexCell++)
         {
           if (line[indexCell] == CellValue.Unknown)
           {
