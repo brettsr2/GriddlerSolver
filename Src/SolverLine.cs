@@ -214,7 +214,13 @@ namespace Griddler_Solver
         Config.TicksCurrentIteration = DateTime.Now.Ticks;
 
         TimeSpan timeSpanStart = TimeSpan.FromTicks(DateTime.Now.Ticks - Config.TicksStart);
-        Config.Progress?.AddMessage($"[{timeSpanStart.ToString(Solver.TimeFormat)}] {ToString()}");
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.Append($"[{timeSpanStart.ToString(Solver.TimeFormat)}] ");
+        stringBuilder.Append($"{ToString()}");
+        Solver.PrintMemoryInfo(Config, stringBuilder);
+
+        Config.Progress?.AddMessage(stringBuilder.ToString());
       }
 
       if (hints.Count == 0)

@@ -288,18 +288,21 @@ namespace Griddler_Solver
       stringBuilder.Append($" Permutations: {currentPermutationsCount}");
       stringBuilder.Append($" Permutations limit: {permutationsLimit}");
 
-      var memoryInfo = GC.GetGCMemoryInfo();
-      Int64 memoryPercent = (memoryInfo.MemoryLoadBytes * 100) / memoryInfo.TotalAvailableMemoryBytes;
-      stringBuilder.Append($" memory: {memoryPercent}%");
-      if (memoryPercent >= 90)
-      {
-        stringBuilder.Append($" memory limit reached. stopping solver.");
-        Config.Break = true;
-      }
+      PrintMemoryInfo(Config, stringBuilder);
 
       Config.Progress?.AddMessage(stringBuilder.ToString());
     }
-
+    public static void PrintMemoryInfo(Config config, StringBuilder stringBuilder)
+    {
+      var memoryInfo = GC.GetGCMemoryInfo();
+      Int64 memoryPercent = (memoryInfo.MemoryLoadBytes * 100) / memoryInfo.TotalAvailableMemoryBytes;
+      stringBuilder.Append($" Memory: {memoryPercent}%");
+      if (memoryPercent >= 90)
+      {
+        stringBuilder.Append($" memory limit reached. stopping solver.");
+        config.Break = true;
+      }
+    }
     public void Solve(Config config)
     {
       Config = config;
