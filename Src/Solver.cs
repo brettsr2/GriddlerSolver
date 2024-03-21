@@ -291,6 +291,11 @@ namespace Griddler_Solver
       var memoryInfo = GC.GetGCMemoryInfo();
       Int64 memoryPercent = (memoryInfo.MemoryLoadBytes * 100) / memoryInfo.TotalAvailableMemoryBytes;
       stringBuilder.Append($" memory: {memoryPercent}%");
+      if (memoryPercent >= 90)
+      {
+        stringBuilder.Append($" memory limit reached. stopping solver.");
+        Config.Break = true;
+      }
 
       Config.Progress?.AddMessage(stringBuilder.ToString());
     }
