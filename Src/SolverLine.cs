@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -11,7 +10,7 @@ namespace Griddler_Solver
   {
     class FindResult
     {
-      public Int32 BegIndex
+      public Int32 BeginIndex
       { get; set; }
       public Int32 EndIndex
       { get; set; }
@@ -77,13 +76,13 @@ namespace Griddler_Solver
 
         return _MaxPermutationsCount;
       }
-     }
+    }
 
     public UInt64 CurrentPermutationsCount
     {
       get
       {
-        return (UInt64)_CurrentLinePermutations.Count;
+        return _PermutationCount;
       }
     }
 
@@ -93,14 +92,20 @@ namespace Griddler_Solver
     public Boolean IsSolved
     { get; set; } = false;
 
+    public Boolean HasContradiction
+    { get; set; } = false;
+
     public Int32 IterationOfGenerating
     { get; set; } = 0;
 
-    private List<CellValue[]> _CurrentLinePermutations = [];
+    private LineBitmask _MergedLine;
+    private Boolean _HasMergedLine = false;
+    private UInt64 _PermutationCount = 0;
 
     public void Solve()
     {
       Changed = false;
+      HasContradiction = false;
       if (IsRow)
       {
         var row = Solve(Board.GetRow(Index), Hints);
@@ -129,23 +134,14 @@ namespace Griddler_Solver
         return clone;
       }
 
-      if (_CurrentLinePermutations.Count == 0)
-      {
-        GeneratePermutations(line, hints);
-        FirstPermutationsCount = CurrentPermutationsCount;
-      }
-      else
-      {
-        List<CellValue[]> newCurrent = new List<CellValue[]>(_CurrentLinePermutations.Count);
-        foreach (var permutation in _CurrentLinePermutations)
-        {
-          if (IsPermutationValid(line, permutation))
-          {
-            newCurrent.Add(permutation);
-          }
-        }
+      _HasMergedLine = false;
+      _PermutationCount = 0;
 
-        _CurrentLinePermutations = newCurrent;
+      GeneratePermutations(line, hints);
+
+      if (FirstPermutationsCount == 0)
+      {
+        FirstPermutationsCount = _PermutationCount;
       }
 
       if (Config.Break)
@@ -153,30 +149,28 @@ namespace Griddler_Solver
         return clone;
       }
 
-      Merge(clone, _CurrentLinePermutations);
-
-      if (Config.PermutationsLimit == false)
+      if (!_HasMergedLine && _PermutationCount == 0)
       {
-        _CurrentLinePermutations = [];
+        HasContradiction = true;
+        return clone;
+      }
+
+      if (_HasMergedLine)
+      {
+        CellValue[] merged = _MergedLine.ToLine();
+        for (Int32 index = 0; index < clone.Length; index++)
+        {
+          if (clone[index] == CellValue.Unknown && merged[index] != CellValue.Unknown)
+          {
+            Changed = true;
+            clone[index] = merged[index];
+          }
+        }
       }
 
       return clone;
     }
 
-    private Boolean IsPermutationValid(CellValue[] line, CellValue[] permutation)
-    {
-      for (Int32 index = 0; index < permutation.Length; index++)
-      {
-        CellValue cellValue = line[index];
-        CellValue cellValuePermutation = permutation[index];
-        if (cellValue != CellValue.Unknown && cellValue != cellValuePermutation)
-        {
-          return false;
-        }
-      }
-
-      return true;
-    }
     private void GeneratePermutations(CellValue[] lineOrigin, Hint[] hints)
     {
       if (Config.Break)
@@ -184,99 +178,107 @@ namespace Griddler_Solver
         return;
       }
 
-      Int32 maxHintCellCount = hints.Sum(h => h.Count);
+      Int32 maxHintCellCount = hints.Sum(hint => hint.Count);
+      Int32 remainingHintCells = maxHintCellCount;
 
-      Int32 begIndex = 0;
+      Hint[] originalHints = hints;
+      Int32 beginIndex = 0;
+      Boolean optimized = false;
       if (Config.PermutationsLimit)
       {
         FindResult? findResult = FindLastFitIndex(lineOrigin, hints);
         if (findResult != null)
         {
-          begIndex = findResult.BegIndex;
+          beginIndex = findResult.BeginIndex;
           hints = findResult.Hints;
+          remainingHintCells = hints.Sum(hint => hint.Count);
+          optimized = true;
         }
       }
 
-      //CellValue[] line = new CellValue[lineOrigin.Length];
-      CellValue[] line = (CellValue[])lineOrigin.Clone();
-      GeneratePermutations(lineOrigin, line, begIndex, new Queue<Hint>(hints), maxHintCellCount);
+      LineBitmask bmOrigin = LineBitmask.FromLine(lineOrigin);
+      LineBitmask bmLine = bmOrigin;
+      GeneratePermutations(bmOrigin, bmLine, beginIndex, hints, 0, remainingHintCells, maxHintCellCount);
+
+      // Fallback: if the optimized pass found 0 permutations, retry without optimization
+      if (_PermutationCount == 0 && optimized && !Config.Break)
+      {
+        _HasMergedLine = false;
+        _PermutationCount = 0;
+
+        remainingHintCells = maxHintCellCount;
+        bmLine = bmOrigin;
+        GeneratePermutations(bmOrigin, bmLine, 0, originalHints, 0, remainingHintCells, maxHintCellCount);
+      }
     }
-    private void GeneratePermutations(CellValue[] lineOrigin, CellValue[] line, Int32 startIdx, Queue<Hint> hints, Int32 maxHintCellCount)
+    private void GeneratePermutations(LineBitmask lineOrigin, LineBitmask line, Int32 startIndex, Hint[] hints, Int32 hintIndex, Int32 remainingHintCells, Int32 maxHintCellCount)
     {
       if (Config.Break)
       {
         return;
       }
 
-      TimeSpan timeSpanCurrentIteration = TimeSpan.FromTicks(DateTime.Now.Ticks - Config.TicksCurrentIteration);
+      TimeSpan timeSpanCurrentIteration = TimeSpan.FromTicks(DateTime.Now.Ticks - Config.TicksCurrentIterationTimer);
       if (timeSpanCurrentIteration.TotalSeconds >= 10)
       {
-        Config.TicksCurrentIteration = DateTime.Now.Ticks;
+        Config.TicksCurrentIterationTimer = DateTime.Now.Ticks;
 
-        TimeSpan timeSpanStart = TimeSpan.FromTicks(DateTime.Now.Ticks - Config.TicksStart);
+        TimeSpan timeSpanStart = TimeSpan.FromTicks(DateTime.Now.Ticks - Config.TicksCurrentIterationStart);
 
         StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.Append(new String(' ', Config.IterationPrefixLength));
         stringBuilder.Append($"[{timeSpanStart.ToString(Solver.TimeFormat)}] ");
         stringBuilder.Append($"{ToString()}");
-        Solver.PrintMemoryInfo(Config, stringBuilder);
 
         Config.Progress?.AddMessage(stringBuilder.ToString());
       }
 
-      if (hints.Count == 0)
+      if (hintIndex >= hints.Length)
       {
-        FillEmptyCells(line);
-        if (IsPermutationValid(lineOrigin, line))
+        line.FillEmptyCells();
+        if (line.IsValid(lineOrigin))
         {
-          _CurrentLinePermutations.Add(line);
+          _PermutationCount++;
+          if (!_HasMergedLine)
+          {
+            _MergedLine = line;
+            _HasMergedLine = true;
+          }
+          else
+          {
+            _MergedLine.MergeWith(line);
+          }
         }
 
         return;
       }
 
-      var hint = hints.Dequeue();
+      var hint = hints[hintIndex];
+      Int32 remainingAfter = remainingHintCells - hint.Count;
+      Int32 separatorsAfter = hints.Length - hintIndex - 1;
 
       // This maximum index this hint can be and still fit the others on
-      Int32 maxStartingIndex = line.Length - hints.Sum(h => h.Count) - hints.Count - hint.Count + 1;
-      for (Int32 index = startIdx; index < maxStartingIndex; index++)
+      Int32 maxStartingIndex = line.Length - remainingAfter - separatorsAfter - hint.Count + 1;
+      for (Int32 index = startIndex; index < maxStartingIndex; index++)
       {
-        var clone = (CellValue[])line.Clone();
-        if (FillCells(clone, index, hint.Count, (CellValue)hint.ColorId, maxHintCellCount))
+        // Gap-Color pruning: if there's a Color cell in origin between startIndex and index,
+        // no hint covers it → invalid, and all later positions are worse → break
+        if (index > startIndex && lineOrigin.HasColorInRange(startIndex, index - startIndex))
         {
-          GeneratePermutations(lineOrigin, clone, index + hint.Count + 1, new Queue<Hint>(hints), maxHintCellCount);
+          break;
         }
-      }
-    }
 
-    private void Merge(CellValue[] line, IList<CellValue[]> permutations)
-    {
-      if (permutations.Count == 0)
-      {
-        return;
-      }
-
-      for (Int32 index = 0; index < line.Length; index++)
-      {
-        if (line[index] != CellValue.Unknown)
+        // Separator check: cell right after the hint must not be Color in origin
+        Int32 afterHint = index + hint.Count;
+        if (afterHint < line.Length && lineOrigin.HasColorAt(afterHint))
         {
           continue;
         }
 
-        CellValue value = permutations[0][index];
-
-        Boolean allMatch = true;
-        foreach (CellValue[] permutation in permutations)
+        var clone = line;
+        if (clone.FillRange(index, hint.Count, maxHintCellCount))
         {
-          if (permutation[index] != value)
-          {
-            allMatch = false;
-            break;
-          }
-        }
-        if (allMatch)
-        {
-          Changed = true;
-          line[index] = value;
+          GeneratePermutations(lineOrigin, clone, afterHint + 1, hints, hintIndex + 1, remainingAfter, maxHintCellCount);
         }
       }
     }
@@ -291,31 +293,6 @@ namespace Griddler_Solver
         }
       }
     }
-    private Boolean FillCells(CellValue[] line, Int32 indexStart, Int32 numberOfCells, CellValue value, Int32 maxHintCellCount)
-    {
-      Debug.Assert(numberOfCells > 0);
-      
-      for (Int32 index = indexStart; index < indexStart + numberOfCells; index++)
-      {
-        if (line[index] == CellValue.Background) // wrong permutation
-        {
-          return false;
-        }
-        line[index] = value;
-      }
-
-      Int32 hintCellCount = 0;
-      foreach (CellValue cellValue in line)
-      {
-        if (cellValue == CellValue.Color)
-        {
-          hintCellCount++;
-        }
-      }
-
-      return hintCellCount <= maxHintCellCount;
-    }
-
     private Int32 FindFirst(CellValue[] line, Int32 indexStart)
     {
       for (Int32 indexLine = indexStart; indexLine < line.Length; indexLine++)
@@ -351,7 +328,7 @@ namespace Griddler_Solver
         }
 
         listHints.Remove(hint);
-        indexOnLine += hint.Count - 1 + 1;
+        indexOnLine += hint.Count + 1; // skip hint cells + mandatory separator
 
         Int32 indexOnLineNew = FindFirst(line, indexOnLine);
         if (indexOnLineNew == -1)
@@ -364,7 +341,7 @@ namespace Griddler_Solver
 
       return new FindResult()
       {
-        BegIndex = indexOnLine,
+        BeginIndex = indexOnLine,
         Hints = listHints.ToArray(),
       };
     }

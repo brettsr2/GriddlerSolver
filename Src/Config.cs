@@ -1,8 +1,4 @@
 ﻿using System;
-using static System.Formats.Asn1.AsnWriter;
-using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Xml.Linq;
 
 namespace Griddler_Solver
 {
@@ -28,13 +24,21 @@ namespace Griddler_Solver
     { get; set; }
     public Boolean StaticAnalysisEnabled
     { get; set; }
+    public Boolean OverlapAnalysisEnabled
+    { get; set; }
+    public Boolean BacktrackingEnabled
+    { get; set; }
 
     public Boolean StepMode
     { get; set; }
 
-    public Int64 TicksCurrentIteration
-    { get; set; } = DateTime.Now.Ticks;
+    public Int64 TicksCurrentIterationStart
+    { get; set; }
+    public Int64 TicksCurrentIterationTimer
+    { get; set; }
     public Int64 TicksStart
     { get; set; } = DateTime.Now.Ticks;
+    public Int32 IterationPrefixLength
+    { get; set; }
   }
 }

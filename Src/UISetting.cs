@@ -70,6 +70,32 @@ namespace Griddler_Solver
       }
     }
 
+    [ConfigurationProperty("CheckBoxOverlapAnalysis", DefaultValue = true)]
+    public Boolean CheckBoxOverlapAnalysis
+    {
+      get
+      {
+        return (Boolean)this["CheckBoxOverlapAnalysis"];
+      }
+      set
+      {
+        this["CheckBoxOverlapAnalysis"] = value;
+      }
+    }
+
+    [ConfigurationProperty("CheckBoxBacktracking", DefaultValue = true)]
+    public Boolean CheckBoxBacktracking
+    {
+      get
+      {
+        return (Boolean)this["CheckBoxBacktracking"];
+      }
+      set
+      {
+        this["CheckBoxBacktracking"] = value;
+      }
+    }
+
     [ConfigurationProperty("CheckBoxStepMode", DefaultValue = false)]
     public Boolean CheckBoxStepMode
     {

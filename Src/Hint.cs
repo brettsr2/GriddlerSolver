@@ -11,6 +11,7 @@ namespace Griddler_Solver
     public Int32 Count
     { get; set; }
 
+    [JsonIgnore]
     public Boolean IsSolved
     { get; set; }
 

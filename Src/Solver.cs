@@ -1,17 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Shapes;
 
 namespace Griddler_Solver
 {
@@ -29,9 +23,6 @@ namespace Griddler_Solver
 
     #region drawing
     public const String TimeFormat = @"mm\:ss";
-
-    private SolidColorBrush _BrushGrey = new(Colors.Gray);
-    private SolidColorBrush _BrushBlack = new(Colors.Black);
 
     public Int32 MaxHintsCountRow
     {
@@ -61,6 +52,21 @@ namespace Griddler_Solver
     { get; set; } = new();
 
     private List<StaticAnalysis> _ListStaticAnalysis = [];
+
+    [JsonIgnore]
+    public IReadOnlyList<StaticAnalysis> ListStaticAnalysis => _ListStaticAnalysis;
+
+    private class BacktrackState
+    {
+      public CellValue[][] BoardSnapshot { get; set; } = Array.Empty<CellValue[]>();
+      public Boolean[][] HintRowSolved { get; set; } = Array.Empty<Boolean[]>();
+      public Boolean[][] HintColumnSolved { get; set; } = Array.Empty<Boolean[]>();
+      public Int32 GuessRow { get; set; }
+      public Int32 GuessCol { get; set; }
+      public CellValue NextGuess { get; set; }  // CellValue.Unknown = exhausted (both tried)
+      public UInt64 PermutationsLimit { get; set; }
+    }
+    private Stack<BacktrackState> _backtrackStack = new();
     #endregion // solving
 
     public Solver()
@@ -81,166 +87,6 @@ namespace Griddler_Solver
       Board.Clear();
       _ListStaticAnalysis = [];
     }
-    public void Draw(Canvas canvas)
-    {
-      if (Board.RowCount != 0 && Board.ColumnCount != 0)
-      {
-        CellSize = Math.Min(canvas.ActualHeight / (MaxHintsCountColumn + Board.RowCount), canvas.ActualWidth / (MaxHintsCountRow + Board.ColumnCount));
-      }
-      Double FontSize = CellSize * 0.8;
-
-      Action<Double, Double, SolidColorBrush> createRectangle = (left, top, brush) =>
-      {
-        Rectangle rect = new Rectangle();
-        canvas.Children.Add(rect);
-
-        rect.Stroke = brush;
-        rect.Fill = brush;
-
-        rect.Width = CellSize;
-        rect.Height = CellSize;
-
-        Canvas.SetLeft(rect, left);
-        Canvas.SetTop(rect, top);
-      };
-      Action<Double, Double, String, SolidColorBrush> createText = (left, top, text, brush) =>
-      {
-        Label label = new Label();
-        canvas.Children.Add(label);
-
-        label.Content = text;
-        label.FontSize = FontSize;
-        label.Foreground = brush;
-        label.Padding = new Thickness(0, 0, 0, 0);
-
-        label.Measure(new Size(double.MaxValue, double.MaxValue));
-
-        left -= label.DesiredSize.Width / 2;
-        top -= label.DesiredSize.Height / 2;
-
-        Canvas.SetLeft(label, left);
-        Canvas.SetTop(label, top);
-      };
-      Action<Double, Double, Double, Double, Double, SolidColorBrush> createLine = (x1, y1, x2, y2, thickness, brush) =>
-      {
-        Line line = new();
-        canvas.Children.Add(line);
-
-        line.Stroke = brush;
-        line.StrokeThickness = thickness;
-
-        line.X1 = x1;
-        line.X2 = x2;
-
-        line.Y1 = y1;
-        line.Y2 = y2;
-      };
-      Action<Double, Double, SolidColorBrush> createCross = (left, top, brush) =>
-      {
-        createLine(left, top, left + CellSize, top + CellSize, 1, brush);
-        createLine(left + CellSize, top, left, top + CellSize, 1, brush);
-      };
-
-      Double currentX, currentY;
-
-      currentX = MaxHintsCountRow * CellSize;
-      for (Int32 col = 0; col < Board.ColumnCount; col++)
-      {
-        Hint[] list = Board.HintsColumn[col];
-        currentY = (MaxHintsCountColumn - list.Length) * CellSize;
-
-        foreach (Hint hint in list)
-        {
-          createRectangle(currentX, currentY, ListColors[hint.ColorId].ColorBrush);
-          createText(currentX + CellSize / 2, currentY + CellSize / 2, hint.Count.ToString(), ListColors[1].ColorBrush);
-          if (hint.IsSolved)
-          {
-            createCross(currentX, currentY, _BrushGrey);
-          }
-
-          currentY += CellSize;
-        }
-
-        currentX += CellSize;
-      }
-
-      currentY = MaxHintsCountColumn * CellSize;
-      for (Int32 row = 0; row < Board.RowCount; row++)
-      {
-        Hint[] list = Board.HintsRow[row];
-        currentX = (MaxHintsCountRow - list.Length) * CellSize;
-
-        foreach (Hint hint in list)
-        {
-          createRectangle(currentX, currentY, ListColors[hint.ColorId].ColorBrush);
-          createText(currentX + CellSize / 2, currentY + CellSize / 2, hint.Count.ToString(), ListColors[1].ColorBrush);
-          if (hint.IsSolved)
-          {
-            createCross(currentX, currentY, _BrushGrey);
-          }
-
-          currentX += CellSize;
-        }
-
-        currentY += CellSize;
-      }
-
-      currentX = MaxHintsCountRow * CellSize;
-      currentY = MaxHintsCountColumn * CellSize;
-
-      // board itself
-      for (Int32 col = 0; col < Board.ColumnCount; col++)
-      {
-        for (Int32 row = 0; row < Board.RowCount; row++)
-        {
-          CellValue value = Board[row, col];
-          Double x = currentX + col * CellSize;
-          Double y = currentY + row * CellSize;
-          createRectangle(x, y, ListColors[(Int32)value].ColorBrush);
-        }
-      }
-      // grid
-      for (Int32 row = 0; row <= Board.RowCount; row++)
-      {
-        Double x2 = currentX + Board.ColumnCount * CellSize;
-        Double y = currentY + row * CellSize;
-
-        SolidColorBrush brush = _BrushGrey;
-        Double thickness = 1;
-
-        if (row % 5 == 0)
-        {
-          brush = _BrushBlack;
-          thickness = 2;
-        }
-
-        createLine(currentX, y, x2, y, thickness, brush);
-      }
-      for (Int32 col = 0; col <= Board.ColumnCount; col++)
-      {
-        Double x = currentX + col * CellSize;
-        Double y2 = currentY + Board.RowCount * CellSize;
-
-        SolidColorBrush brush = _BrushGrey;
-        Double thickness = 1;
-
-        if (col % 5 == 0)
-        {
-          brush = _BrushBlack;
-          thickness = 2;
-        }
-
-        createLine(x, currentY, x, y2, thickness, brush);
-      }
-      // static analysis
-      foreach (var StaticAnalysis in _ListStaticAnalysis)
-      {
-        Double x = currentX + StaticAnalysis.Column * CellSize;
-        Double y = currentY + StaticAnalysis.Row * CellSize;
-
-        createCross(x, y, _BrushGrey);
-      }
-    }
 
     private Int32 GetMaxItemCount(Hint[][]? hints)
     {
@@ -256,7 +102,7 @@ namespace Griddler_Solver
 
     private void PrintIterationStatistic(Int32 iteration, UInt64 currentPermutationsCount, UInt64 permutationsLimit, TimeSpan globalElapsed, TimeSpan iterationElapsed)
     {
-      Int32 unknownCount = 0, blankCount = 0, filledCount = 0;
+      Int32 unknownCount = 0, blankCount = 0, solvedCount = 0;
 
       for (Int32 row = 0; row < Board.RowCount; row++)
       {
@@ -272,40 +118,28 @@ namespace Griddler_Solver
           }
           else
           {
-            filledCount++;
+            solvedCount++;
           }
         }
       }
 
       Int32 total = Board.RowCount * Board.ColumnCount;
-      Int32 percentUnknown = unknownCount * 100 / total;
+      Int32 percentSolved = solvedCount * 100 / total;
 
       StringBuilder stringBuilder = new StringBuilder();
       stringBuilder.Append($"[{globalElapsed.ToString(TimeFormat)}]");
       stringBuilder.Append($"[{iteration}]");
       stringBuilder.Append($"[{iterationElapsed.ToString(TimeFormat)}]");
-      stringBuilder.Append($" Unknown: {unknownCount} ({percentUnknown}%) Blank: {blankCount} Filled: {filledCount}");
+      stringBuilder.Append($" Solved: {solvedCount}({percentSolved}%)");
       stringBuilder.Append($" Permutations: {currentPermutationsCount}");
       stringBuilder.Append($" Permutations limit: {permutationsLimit}");
 
-      PrintMemoryInfo(Config, stringBuilder);
-
       Config.Progress?.AddMessage(stringBuilder.ToString());
-    }
-    public static void PrintMemoryInfo(Config config, StringBuilder stringBuilder)
-    {
-      var memoryInfo = GC.GetGCMemoryInfo();
-      Int64 memoryPercent = (memoryInfo.MemoryLoadBytes * 100) / memoryInfo.TotalAvailableMemoryBytes;
-      stringBuilder.Append($" Memory: {memoryPercent}%");
-      if (memoryPercent >= 90)
-      {
-        stringBuilder.Append($" memory limit reached. stopping solver.");
-        config.Break = true;
-      }
     }
     public void Solve(Config config)
     {
       Config = config;
+      _backtrackStack.Clear();
       Config.Progress?.AddMessage($"Start");
       Config.Progress?.AddMessage($"Cells to solve: {Board.RowCount * Board.ColumnCount}");
 
@@ -343,13 +177,10 @@ namespace Griddler_Solver
           Board = Board,
         });
       }
-      List<SolverLine> listSolverLineOrigin = new(listSolverLine);
-
       if (Config.ScoreSortingEnabled)
       {
         listSolverLine.Sort(delegate (SolverLine line1, SolverLine line2)
         {
-          //return line1.MaxPermutationsCount.CompareTo(line2.MaxPermutationsCount);
           return -line1.Score.CompareTo(line2.Score);
         });
       }
@@ -360,6 +191,7 @@ namespace Griddler_Solver
       UInt64 permutationsLimit = Config.PermutationsLimit ? 1000000 : UInt32.MaxValue;
 
       StaticAnalysis();
+      OverlapAnalysis();
 
       while (!Board.IsSolved)
       {
@@ -369,7 +201,7 @@ namespace Griddler_Solver
         }
 
         Stopwatch stopWatchIteration = Stopwatch.StartNew();
-        
+
         iteration++;
         UInt64 currentPermutationsCount = 0;
 
@@ -382,19 +214,25 @@ namespace Griddler_Solver
           }
         }
 
-        listSolverLine = listSolverLineFiltered;
-
         Boolean changed = false;
         UInt64 permutationsMinLimit = UInt64.MaxValue;
+        Object syncLock = new Object();
 
-        Config.TicksCurrentIteration = DateTime.Now.Ticks;
+        Config.TicksCurrentIterationTimer = Config.TicksCurrentIterationStart = DateTime.Now.Ticks;
+        Config.IterationPrefixLength = 9 + $"{iteration}".Length; // [mm:ss] = 7, [ + ] = 2
 
         if (Config.PermutationAnalysisEnabled)
         {
           var options = new ParallelOptions { MaxDegreeOfParallelism = Config.MultithreadEnabled ? -1 : 1 };
-          Parallel.ForEach(listSolverLine, options, solverLine =>
+          Parallel.ForEach(listSolverLineFiltered, options, solverLine =>
           {
             if (Config.Break)
+            {
+              return;
+            }
+
+            Boolean isDirty = solverLine.IsRow ? Board.IsRowDirty(solverLine.Index) : Board.IsColumnDirty(solverLine.Index);
+            if (!isDirty)
             {
               return;
             }
@@ -404,9 +242,21 @@ namespace Griddler_Solver
             UInt64 maxPermutationsCount = solverLine.MaxPermutationsCount;
             if (maxPermutationsCount > permutationsLimit)
             {
-              permutationsMinLimit = Math.Min(permutationsMinLimit, maxPermutationsCount);
+              lock (syncLock)
+              {
+                permutationsMinLimit = Math.Min(permutationsMinLimit, maxPermutationsCount);
+              }
               Config.Progress?.AddDebugMessage($"{solverLine} skipped, permutations limit {permutationsLimit}");
               return;
+            }
+
+            if (solverLine.IsRow)
+            {
+              Board.ClearRowDirty(solverLine.Index);
+            }
+            else
+            {
+              Board.ClearColumnDirty(solverLine.Index);
             }
 
             if (solverLine.IterationOfGenerating == 0)
@@ -415,12 +265,73 @@ namespace Griddler_Solver
             }
 
             solverLine.Solve();
-            currentPermutationsCount += solverLine.CurrentPermutationsCount;
-            changed |= solverLine.Changed;
+            lock (syncLock)
+            {
+              currentPermutationsCount += solverLine.CurrentPermutationsCount;
+              changed |= solverLine.Changed;
+            }
           });
         }
 
+        // Contradiction detection — only when we've made a guess (stack non-empty)
+        if (_backtrackStack.Count > 0)
+        {
+          Boolean contradiction = false;
+          foreach (var solverLine in listSolverLine)
+          {
+            if (solverLine.HasContradiction)
+            {
+              contradiction = true;
+              break;
+            }
+          }
+          if (contradiction)
+          {
+            Boolean foundAlternative = false;
+            while (_backtrackStack.Count > 0)
+            {
+              var state = _backtrackStack.Pop();
+              RestoreState(state, listSolverLine);
+
+              if (state.NextGuess != CellValue.Unknown) // Has an alternative to try
+              {
+                // Push exhausted marker so future contradictions are still detected
+                _backtrackStack.Push(new BacktrackState
+                {
+                  BoardSnapshot = state.BoardSnapshot,
+                  HintRowSolved = state.HintRowSolved,
+                  HintColumnSolved = state.HintColumnSolved,
+                  GuessRow = state.GuessRow,
+                  GuessCol = state.GuessCol,
+                  NextGuess = CellValue.Unknown, // Both alternatives tried
+                  PermutationsLimit = state.PermutationsLimit
+                });
+                Board[state.GuessRow, state.GuessCol] = state.NextGuess;
+                permutationsLimit = state.PermutationsLimit;
+                Config.Progress?.AddMessage($"Backtrack: contradiction, trying {state.NextGuess} at ({state.GuessRow + 1},{state.GuessCol + 1}), depth {_backtrackStack.Count}");
+                foundAlternative = true;
+                break;
+              }
+              else
+              {
+                Config.Progress?.AddMessage($"Backtrack: both options exhausted at ({state.GuessRow + 1},{state.GuessCol + 1}), unwinding, depth {_backtrackStack.Count}");
+              }
+            }
+
+            if (!foundAlternative)
+            {
+              Config.Progress?.AddMessage("Backtracking exhausted all options. No solution found.");
+              break;
+            }
+
+            StaticAnalysis();
+            OverlapAnalysis();
+            continue;
+          }
+        }
+
         StaticAnalysis();
+        OverlapAnalysis();
 
         Config.Progress?.AddDebugMessage($"Iteration {iteration}");
         foreach (SolverLine solverLine in listSolverLine)
@@ -430,7 +341,57 @@ namespace Griddler_Solver
 
         if (changed == false)
         {
-          permutationsLimit = permutationsMinLimit + 1;
+          if (permutationsMinLimit < UInt64.MaxValue)
+          {
+            permutationsLimit = permutationsMinLimit + 1;
+          }
+          else
+          {
+            Boolean anyDirty = false;
+            foreach (SolverLine solverLine in listSolverLine)
+            {
+              if (!solverLine.IsSolved)
+              {
+                Boolean dirty = solverLine.IsRow ? Board.IsRowDirty(solverLine.Index) : Board.IsColumnDirty(solverLine.Index);
+                if (dirty)
+                {
+                  anyDirty = true;
+                  break;
+                }
+              }
+            }
+            if (!anyDirty)
+            {
+              // Normal solver is stuck — try backtracking as last resort
+              if (Config.BacktrackingEnabled)
+              {
+                var (guessRow, guessCol) = FindBestGuessCell();
+                if (guessRow >= 0)
+                {
+                  _backtrackStack.Push(new BacktrackState
+                  {
+                    BoardSnapshot = Board.CurrentState,
+                    HintRowSolved = SaveHintSolved(Board.HintsRow),
+                    HintColumnSolved = SaveHintSolved(Board.HintsColumn),
+                    GuessRow = guessRow,
+                    GuessCol = guessCol,
+                    NextGuess = CellValue.Background,
+                    PermutationsLimit = permutationsLimit
+                  });
+                  Board[guessRow, guessCol] = CellValue.Color;
+                  Config.Progress?.AddMessage($"Backtrack: guessing Color at ({guessRow + 1},{guessCol + 1}), depth {_backtrackStack.Count}");
+                  ResetSolverLines(listSolverLine);
+                  _ListStaticAnalysis.Clear();
+                  // Keep current permutationsLimit — don't reset, we need full analysis for contradiction detection
+                  StaticAnalysis();
+                  OverlapAnalysis();
+                  continue;
+                }
+              }
+              Config.Progress?.AddMessage("No progress and no dirty lines. Solver stuck.");
+              break;
+            }
+          }
         }
 
         stopWatchIteration.Stop();
@@ -442,9 +403,9 @@ namespace Griddler_Solver
         }
       }
 
-      foreach (SolverLine solverLine in listSolverLineOrigin)
+      foreach (SolverLine solverLine in listSolverLine)
       {
-        Config.Progress?.AddMessage(solverLine.ToString());
+        Config.Progress?.AddDebugMessage(solverLine.ToString());
       }
 
       Config.Break = true;
@@ -452,6 +413,83 @@ namespace Griddler_Solver
       Board.Iterations = iteration;
       Board.TimeTaken = stopWatchGlobal.Elapsed;
     }
+    private (Int32 row, Int32 col) FindBestGuessCell()
+    {
+      // Find the row with fewest Unknown cells (most constrained)
+      Int32 bestRow = -1, bestCol = -1;
+      Int32 fewestUnknowns = Int32.MaxValue;
+
+      for (Int32 row = 0; row < Board.RowCount; row++)
+      {
+        Int32 unknownCount = 0;
+        Int32 firstUnknownCol = -1;
+
+        for (Int32 col = 0; col < Board.ColumnCount; col++)
+        {
+          if (Board[row, col] == CellValue.Unknown)
+          {
+            unknownCount++;
+            if (firstUnknownCol == -1)
+            {
+              firstUnknownCol = col;
+            }
+          }
+        }
+
+        if (unknownCount > 0 && unknownCount < fewestUnknowns)
+        {
+          fewestUnknowns = unknownCount;
+          bestRow = row;
+          bestCol = firstUnknownCol;
+        }
+      }
+
+      return (bestRow, bestCol);
+    }
+
+    private Boolean[][] SaveHintSolved(Hint[][] hints)
+    {
+      var result = new Boolean[hints.Length][];
+      for (Int32 i = 0; i < hints.Length; i++)
+      {
+        result[i] = new Boolean[hints[i].Length];
+        for (Int32 j = 0; j < hints[i].Length; j++)
+        {
+          result[i][j] = hints[i][j].IsSolved;
+        }
+      }
+      return result;
+    }
+
+    private void RestoreHintSolved(Hint[][] hints, Boolean[][] saved)
+    {
+      for (Int32 i = 0; i < hints.Length; i++)
+      {
+        for (Int32 j = 0; j < hints[i].Length; j++)
+        {
+          hints[i][j].IsSolved = saved[i][j];
+        }
+      }
+    }
+
+    private void ResetSolverLines(List<SolverLine> lines)
+    {
+      foreach (var solverLine in lines)
+      {
+        solverLine.IsSolved = false;
+        solverLine.HasContradiction = false;
+      }
+    }
+
+    private void RestoreState(BacktrackState state, List<SolverLine> listSolverLine)
+    {
+      Board.CurrentState = state.BoardSnapshot;
+      RestoreHintSolved(Board.HintsRow, state.HintRowSolved);
+      RestoreHintSolved(Board.HintsColumn, state.HintColumnSolved);
+      ResetSolverLines(listSolverLine);
+      _ListStaticAnalysis.Clear();
+    }
+
     private void StaticAnalysis()
     {
       if (Config.StaticAnalysisEnabled == false)
@@ -645,6 +683,77 @@ namespace Griddler_Solver
           {
             createStaticAnalysis(false, line, indexCell);
           }
+        }
+      }
+    }
+
+    private void OverlapAnalysis()
+    {
+      if (Config.OverlapAnalysisEnabled == false)
+      {
+        return;
+      }
+
+      for (Int32 indexRow = 0; indexRow < Board.RowCount; indexRow++)
+      {
+        if (Config.Break)
+        {
+          break;
+        }
+        OverlapAnalysisCheckLine(true, indexRow);
+      }
+      for (Int32 indexColumn = 0; indexColumn < Board.ColumnCount; indexColumn++)
+      {
+        if (Config.Break)
+        {
+          break;
+        }
+        OverlapAnalysisCheckLine(false, indexColumn);
+      }
+    }
+
+    private void OverlapAnalysisCheckLine(Boolean isRow, Int32 index)
+    {
+      CellValue[] line = isRow ? Board.GetRow(index) : Board.GetColumn(index);
+      Hint[] hints = isRow ? Board.HintsRow[index] : Board.HintsColumn[index];
+
+      LineOverlap.Result? result = LineOverlap.Solve(line, hints);
+      if (result == null || !result.Changed)
+      {
+        return;
+      }
+
+      for (Int32 cellIndex = 0; cellIndex < result.Deductions.Length; cellIndex++)
+      {
+        CellValue? deduction = result.Deductions[cellIndex];
+        if (deduction == null)
+        {
+          continue;
+        }
+
+        Int32 row = isRow ? index : cellIndex;
+        Int32 col = isRow ? cellIndex : index;
+
+        Board[row, col] = deduction.Value;
+
+        StaticAnalysisType type = deduction.Value == CellValue.Color
+          ? StaticAnalysisType.SolvedColor
+          : StaticAnalysisType.SolvedBackground;
+
+        _ListStaticAnalysis.Add(new StaticAnalysis()
+        {
+          IsRow = isRow,
+          Row = row,
+          Column = col,
+          Type = type
+        });
+      }
+
+      for (Int32 hintIndex = 0; hintIndex < result.HintSolved.Length; hintIndex++)
+      {
+        if (result.HintSolved[hintIndex])
+        {
+          hints[hintIndex].IsSolved = true;
         }
       }
     }

@@ -64,25 +64,25 @@ namespace Griddler_Solver
       comboBoxUrl.Items.Add("Pazi [100x100x2] ~2.3M | https://www.griddlers.net/nonogram/-/g/236707");
       comboBoxUrl.Items.Add("Smiling Boy [90x100x2] ~9.5M | https://www.griddlers.net/nonogram/-/g/237830");
       comboBoxUrl.Items.Add("Boat [50x50x2] ~21M | https://www.griddlers.net/nonogram/-/g/116627");
+      comboBoxUrl.Items.Add("George W. Bush [88x99x2] ~42.5M | https://www.griddlers.net/nonogram/-/g/193462");
+      comboBoxUrl.Items.Add("Snow Tiger [100x100x2] ~90M | https://www.griddlers.net/nonogram/-/g/166197");
     }
     private void Draw()
     {
-      StringBuilder stringBuilder = new StringBuilder();
+      List<String> parts = new List<String>();
 
-      stringBuilder.AppendLine($"Name: {_Solver.Name}");
+      parts.Add($"Name: {_Solver.Name}");
       Int32 countColors = _Solver.ListColors.Count > 0 ? _Solver.ListColors.Count - 1 : 0;
-      stringBuilder.AppendLine($"Size: [{_Solver.Board.ColumnCount}x{_Solver.Board.RowCount}x{countColors}]");
+      parts.Add($"Size: [{_Solver.Board.ColumnCount}x{_Solver.Board.RowCount}x{countColors}]");
       if (_Solver.Board.IsSolved)
       {
-        stringBuilder.AppendLine($"Iterations: {_Solver.Board.Iterations}");
-        stringBuilder.AppendLine($"Time elapsed: {_Solver.Board.TimeTaken.ToString(Solver.TimeFormat)}");
+        parts.Add($"Iterations: {_Solver.Board.Iterations}");
+        parts.Add($"Time elapsed: {_Solver.Board.TimeTaken.ToString(Solver.TimeFormat)}");
       }
 
-      label.Content = stringBuilder.ToString();
+      label.Content = String.Join(" | ", parts);
 
-      canvas.Children.Clear();
-      canvas.Children.Add(label);
-      _Solver.Draw(canvas);
+      boardCanvas.SetSolver(_Solver);
     }
 
     private void OnButtonSolve_Click(object sender, RoutedEventArgs e)
@@ -104,6 +104,8 @@ namespace Griddler_Solver
         MultithreadEnabled = checkBoxMultithread.IsChecked == true,
         PermutationsLimit = checkBoxPermutationsLimit.IsChecked == true,
         StaticAnalysisEnabled = checkBoxStaticAnalysis.IsChecked == true,
+        OverlapAnalysisEnabled = checkBoxOverlapAnalysis.IsChecked == true,
+        BacktrackingEnabled = checkBoxBacktracking.IsChecked == true,
         StepMode = checkBoxStepMode.IsChecked == true,
       };
 
@@ -111,7 +113,7 @@ namespace Griddler_Solver
 
       _ProgressWindow?.Close();
       _ProgressWindow = new(this);
-      
+      _ProgressWindow.Title = $"Solving: {_Solver.Name}";
       _ProgressWindow.Width = Width;
       _ProgressWindow.Height = Height;
 
@@ -241,7 +243,7 @@ namespace Griddler_Solver
     private void OnButtonInvert_Click(object sender, RoutedEventArgs e)
     {
       Boolean isChecked = checkBoxScoreSorting.IsChecked == true;
-      checkBoxScoreSorting.IsChecked = checkBoxPermutationAnalysis.IsChecked = checkBoxMultithread.IsChecked = checkBoxPermutationsLimit.IsChecked = checkBoxStaticAnalysis.IsChecked = !isChecked;
+      checkBoxScoreSorting.IsChecked = checkBoxPermutationAnalysis.IsChecked = checkBoxMultithread.IsChecked = checkBoxPermutationsLimit.IsChecked = checkBoxStaticAnalysis.IsChecked = checkBoxOverlapAnalysis.IsChecked = checkBoxBacktracking.IsChecked = !isChecked;
     }
 
     private void OnCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -313,7 +315,7 @@ namespace Griddler_Solver
       Double originX = _Solver.MaxHintsCountRow * _Solver.CellSize;
       Double originY = _Solver.MaxHintsCountColumn * _Solver.CellSize;
 
-      Point point = e.GetPosition(canvas);
+      Point point = e.GetPosition(boardCanvas);
       Double x = point.X - originX;
       Double y = point.Y - originY;
 

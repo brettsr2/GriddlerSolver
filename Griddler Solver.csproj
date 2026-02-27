@@ -5,7 +5,11 @@
     <RootNamespace>Griddler_Solver</RootNamespace>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="app.ico" />
+  </ItemGroup>
   <ItemGroup>
     <None Remove=".editorconfig" />
     <None Remove=".gitignore" />

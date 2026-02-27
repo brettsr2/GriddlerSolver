@@ -7,6 +7,14 @@ namespace Griddler_Solver
   {
     private Object _Lock = new();
 
+    private Boolean[] _DirtyRows = Array.Empty<Boolean>();
+    private Boolean[] _DirtyColumns = Array.Empty<Boolean>();
+
+    public Boolean IsRowDirty(Int32 index) => _DirtyRows[index];
+    public Boolean IsColumnDirty(Int32 index) => _DirtyColumns[index];
+    public void ClearRowDirty(Int32 index) => _DirtyRows[index] = false;
+    public void ClearColumnDirty(Int32 index) => _DirtyColumns[index] = false;
+
     public Boolean IsSolved
     {
       get
@@ -46,7 +54,15 @@ namespace Griddler_Solver
       }
       set
       {
-        _Board[row, column] = value;
+        if (_Board[row, column] != value)
+        {
+          _Board[row, column] = value;
+          if (_DirtyRows.Length > 0)
+          {
+            _DirtyRows[row] = true;
+            _DirtyColumns[column] = true;
+          }
+        }
       }
     }
 
@@ -108,6 +124,10 @@ namespace Griddler_Solver
     public void Init()
     {
       _Board = new CellValue[RowCount, ColumnCount];
+      _DirtyRows = new Boolean[RowCount];
+      _DirtyColumns = new Boolean[ColumnCount];
+      Array.Fill(_DirtyRows, true);
+      Array.Fill(_DirtyColumns, true);
     }
 
     public CellValue[] GetColumn(Int32 indexColumn)
@@ -145,9 +165,10 @@ namespace Griddler_Solver
       {
         for (Int32 row = 0; row < column.Length; row++)
         {
-          if (_Board[row, indexColumn] == CellValue.Unknown)
+          if (_Board[row, indexColumn] == CellValue.Unknown && column[row] != CellValue.Unknown)
           {
             _Board[row, indexColumn] = column[row];
+            _DirtyRows[row] = true;
           }
         }
       }
@@ -158,9 +179,10 @@ namespace Griddler_Solver
       {
         for (Int32 column = 0; column < row.Length; column++)
         {
-          if (_Board[indexRow, column] == CellValue.Unknown)
+          if (_Board[indexRow, column] == CellValue.Unknown && row[column] != CellValue.Unknown)
           {
             _Board[indexRow, column] = row[column];
+            _DirtyColumns[column] = true;
           }
         }
       }

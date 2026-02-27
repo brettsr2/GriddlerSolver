@@ -1,54 +1,66 @@
-﻿<Window x:Class="Griddler_Solver.MainWindow"
+<Window x:Class="Griddler_Solver.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Griddler_Solver"
         mc:Ignorable="d"
-        Title="Nonogram solver" Width="1024" Height="780" Closing="OnWindow_Closing">
+        Title="Nonogram solver" Width="1024" Height="780" Icon="/app.ico" Closing="OnWindow_Closing">
   <Grid>
     <Grid.RowDefinitions>
-      <RowDefinition Height="auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
-      <RowDefinition Height="auto" />
+      <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
-    <StackPanel Grid.Row="0">
-      <Grid>
-        <Grid.RowDefinitions>
-          <RowDefinition Height="auto" />
-          <RowDefinition Height="auto" />
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="Auto"/>
-          <ColumnDefinition/>
-          <ColumnDefinition Width="Auto"/>
-          <ColumnDefinition Width="Auto"/>
-          <ColumnDefinition Width="Auto"/>
-        </Grid.ColumnDefinitions>
-        <Label Grid.Column="0" Content="Url:" />
-        <ComboBox x:Name="comboBoxUrl" Grid.Column="1" IsEditable="True" SelectedIndex="0" MinHeight="26" VerticalAlignment="Center" VerticalContentAlignment="Center" SelectionChanged="OnComboBoxUrl_SelectionChanged" ></ComboBox>
-        <Button Grid.Column="2" Margin="5 0 0 0" MinWidth="100" Content="Download" Click="OnButtonDownload_Click"></Button>
-        <Button Grid.Column="3" Margin="10 0 0 0" MinWidth="100" Content="Save" Click="OnButtonSave_Click"></Button>
-        <Button Grid.Column="4" Margin="5 0 5 0" MinWidth="100" Content="Load" Click="OnButtonLoad_Click"></Button>
-        <WrapPanel Grid.Row="1" Grid.ColumnSpan="5">
-          <CheckBox x:Name="checkBoxScoreSorting" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxScoreSorting}">Score sorting</CheckBox>
-          <CheckBox x:Name="checkBoxPermutationAnalysis" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxPermutaionAnalysis}">Permutation Analysis</CheckBox>
-          <CheckBox x:Name="checkBoxMultithread" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxMultithread}">Multithreads</CheckBox>
-          <CheckBox x:Name="checkBoxPermutationsLimit" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxPermutationsLimit}">Permutations limit</CheckBox>
-          <CheckBox x:Name="checkBoxStaticAnalysis" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxStaticAnalysis}">Static analysis</CheckBox>
-          <Button x:Name="buttonInvert" Margin="10, 0, 0, 0" Click="OnButtonInvert_Click" Content="Invert options"/>
-          <Button x:Name="buttonClearBoard" Margin="10, 0, 0, 0" Click="OnButtonClearBoard_Click" Content="Clear board"/>
-          <CheckBox x:Name="checkBoxDraw" Margin="10, 0, 0, 0" VerticalAlignment="Center" IsChecked="False">Draw</CheckBox>
-          <CheckBox x:Name="checkBoxStepMode" VerticalAlignment="Center" IsChecked="{Binding CheckBoxStepMode}" Content="Step mode"/>
-          <Label x:Name="labelCoordinates" VerticalAlignment="Center"/>
-        </WrapPanel>
-      </Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="Auto" />
+    </Grid.ColumnDefinitions>
+
+    <!-- URL bar -->
+    <Grid Grid.Row="0" Grid.ColumnSpan="2">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <Label Grid.Column="0" Content="Url:" Margin="4"/>
+      <ComboBox x:Name="comboBoxUrl" Grid.Column="1" IsEditable="True" SelectedIndex="0" MinHeight="26" VerticalAlignment="Center" VerticalContentAlignment="Center" SelectionChanged="OnComboBoxUrl_SelectionChanged"/>
+      <Button Grid.Column="2" Margin="5 4 4 4" MinWidth="100" Content="Download" Click="OnButtonDownload_Click"/>
+      <Button Grid.Column="3" Margin="10 4 4 4" MinWidth="100" Content="Save" Click="OnButtonSave_Click"/>
+      <Button Grid.Column="4" Margin="5 4 5 4" MinWidth="100" Content="Load" Click="OnButtonLoad_Click"/>
+    </Grid>
+
+    <!-- Info label -->
+    <Label x:Name="label" Grid.Row="1" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" Padding="4 2" IsHitTestVisible="False"/>
+
+    <!-- Board canvas -->
+    <Grid Grid.Row="2" Grid.Column="0">
+      <local:BoardCanvas x:Name="boardCanvas" ClipToBounds="True" SizeChanged="OnCanvas_SizeChanged" MouseMove="OnCanvas_MouseMove"/>
+    </Grid>
+
+    <!-- Options panel -->
+    <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Vertical" Margin="4 4 8 4">
+      <CheckBox x:Name="checkBoxScoreSorting" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxScoreSorting}">Score sorting</CheckBox>
+      <CheckBox x:Name="checkBoxPermutationAnalysis" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxPermutaionAnalysis}">Permutation Analysis</CheckBox>
+      <CheckBox x:Name="checkBoxMultithread" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxMultithread}">Multithreads</CheckBox>
+      <CheckBox x:Name="checkBoxPermutationsLimit" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxPermutationsLimit}">Permutations limit</CheckBox>
+      <CheckBox x:Name="checkBoxStaticAnalysis" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxStaticAnalysis}">Static analysis</CheckBox>
+      <CheckBox x:Name="checkBoxOverlapAnalysis" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxOverlapAnalysis}">Overlap analysis</CheckBox>
+      <CheckBox x:Name="checkBoxBacktracking" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxBacktracking}">Backtracking</CheckBox>
+      <Separator Margin="4 8 4 0"/>
+      <Button x:Name="buttonInvert" Margin="4 8 4 0" Click="OnButtonInvert_Click" Content="Invert options"/>
+      <Button x:Name="buttonClearBoard" Margin="4 6 4 0" Click="OnButtonClearBoard_Click" Content="Clear board"/>
+      <Separator Margin="4 8 4 0"/>
+      <CheckBox x:Name="checkBoxDraw" Margin="4 8 4 0" VerticalAlignment="Center" IsChecked="False">Draw</CheckBox>
+      <CheckBox x:Name="checkBoxStepMode" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxStepMode}" Content="Step mode"/>
+      <Label x:Name="labelCoordinates" Margin="0 8 0 0" Padding="4 0" VerticalAlignment="Center"/>
     </StackPanel>
-    <Canvas x:Name="canvas" Grid.Row="1" ClipToBounds="True" SizeChanged="OnCanvas_SizeChanged" MouseMove="OnCanvas_MouseMove">
-      <Label x:Name="label"></Label>
-    </Canvas>
-    <StackPanel Grid.Row="2">
-      <Button x:Name="buttonSolve" MinHeight="26" Content="Solve" Click="OnButtonSolve_Click" />
-    </StackPanel>
+
+    <!-- Solve button -->
+    <Button Grid.Row="3" Grid.ColumnSpan="2" x:Name="buttonSolve" MinHeight="32" Margin="4" Content="Solve" Click="OnButtonSolve_Click"/>
   </Grid>
 </Window>

@@ -5,13 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Griddler_Solver.Windows"
         mc:Ignorable="d"
-        Title="ProgressWindow" Height="450" Width="800" Closed="Window_Closed">
+        Title="Solver Progress" Height="450" Width="800" Icon="/app.ico" Closed="Window_Closed">
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="*" />
       <RowDefinition Height="auto" />
     </Grid.RowDefinitions>
-    <TextBox x:Name="textBoxOutput" Grid.Row="0" VerticalScrollBarVisibility="Auto"></TextBox>
-    <Button x:Name="buttonCancel" Grid.Row="1" Click="OnButtonCancel_Click">Cancel</Button>
+    <TextBox x:Name="textBoxOutput" Grid.Row="0" VerticalScrollBarVisibility="Auto" FontFamily="Courier New"></TextBox>
+    <Button x:Name="buttonCancel" Grid.Row="1" MinHeight="32" Margin="4" Click="OnButtonCancel_Click">Cancel</Button>
   </Grid>
 </Window>
