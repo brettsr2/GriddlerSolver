@@ -48,9 +48,6 @@ namespace Griddler_Solver
       }
     }
 
-    public UInt64 FirstPermutationsCount
-    { get; set; }
-
     private UInt64 _MaxPermutationsCount = UInt64.MaxValue;
     public UInt64 MaxPermutationsCount
     {
@@ -95,9 +92,6 @@ namespace Griddler_Solver
     public Boolean HasContradiction
     { get; set; } = false;
 
-    public Int32 IterationOfGenerating
-    { get; set; } = 0;
-
     private LineBitmask _MergedLine;
     private Boolean _HasMergedLine = false;
     private UInt64 _PermutationCount = 0;
@@ -138,11 +132,6 @@ namespace Griddler_Solver
       _PermutationCount = 0;
 
       GeneratePermutations(line, hints);
-
-      if (FirstPermutationsCount == 0)
-      {
-        FirstPermutationsCount = _PermutationCount;
-      }
 
       if (Config.Break)
       {
@@ -229,6 +218,7 @@ namespace Griddler_Solver
         stringBuilder.Append(new String(' ', Config.IterationPrefixLength));
         stringBuilder.Append($"[{timeSpanStart.ToString(Solver.TimeFormat)}] ");
         stringBuilder.Append($"{ToString()}");
+        stringBuilder.Append($" Workers: {Config.ActiveWorkers}");
 
         Config.Progress?.AddMessage(stringBuilder.ToString());
       }
@@ -361,20 +351,12 @@ namespace Griddler_Solver
 
     public override String ToString()
     {
-      UInt64 percentFirst = FirstPermutationsCount * 100 / MaxPermutationsCount;
       UInt64 percentCurrent = CurrentPermutationsCount * 100 / MaxPermutationsCount;
 
       StringBuilder stringBuilder = new StringBuilder();
 
-      stringBuilder.Append($"{(IsRow ? "Row:" : "Column:")} {Number} ");
-      stringBuilder.Append($"Score: {Score} ");
-      stringBuilder.Append($"MaxPermCount: {MaxPermutationsCount} ");
-      if (FirstPermutationsCount > 0)
-      {
-        stringBuilder.Append($"Iteration: {IterationOfGenerating} ");
-        stringBuilder.Append($"FirstPermCount: {FirstPermutationsCount}({percentFirst}%) ");
-      }
-      stringBuilder.Append($"CurrentPermCount: {CurrentPermutationsCount}({percentCurrent}%) ");
+      stringBuilder.Append($"{(IsRow ? "Row:" : "Col:")} {Number}, ");
+      stringBuilder.Append($"Current: {Solver.FormatNumber(CurrentPermutationsCount)}({percentCurrent}%) ");
 
       return stringBuilder.ToString();
     }

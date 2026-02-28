@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Globalization;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Griddler_Solver
 {
@@ -67,6 +68,8 @@ namespace Griddler_Solver
       public UInt64 PermutationsLimit { get; set; }
     }
     private Stack<BacktrackState> _backtrackStack = new();
+
+    private readonly record struct LineKey(Boolean IsRow, Int32 Index);
     #endregion // solving
 
     public Solver()
@@ -130,9 +133,9 @@ namespace Griddler_Solver
       stringBuilder.Append($"[{globalElapsed.ToString(TimeFormat)}]");
       stringBuilder.Append($"[{iteration}]");
       stringBuilder.Append($"[{iterationElapsed.ToString(TimeFormat)}]");
-      stringBuilder.Append($" Solved: {solvedCount}({percentSolved}%)");
-      stringBuilder.Append($" Permutations: {currentPermutationsCount}");
-      stringBuilder.Append($" Permutations limit: {permutationsLimit}");
+      stringBuilder.Append($" Solved: {solvedCount}({percentSolved}%), ");
+      stringBuilder.Append($"Total permutations: {FormatNumber(currentPermutationsCount)}, ");
+      stringBuilder.Append($"Limit per line: {FormatNumber(permutationsLimit)}");
 
       Config.Progress?.AddMessage(stringBuilder.ToString());
     }
@@ -147,11 +150,6 @@ namespace Griddler_Solver
       {
         Config.Progress?.AddMessage($"Empty board. Nothing to solve.");
         return;
-      }
-
-      static Int32 CalculateScore(Hint[] hints)
-      {
-        return hints.Length + hints.Sum(hint => hint.Count * 2);
       }
 
       List<SolverLine> listSolverLine = [];
@@ -185,6 +183,15 @@ namespace Griddler_Solver
         });
       }
 
+      // Build lookup arrays for O(1) row/column → SolverLine mapping
+      SolverLine[] rowLines = new SolverLine[Board.RowCount];
+      SolverLine[] columnLines = new SolverLine[Board.ColumnCount];
+      foreach (SolverLine sl in listSolverLine)
+      {
+        if (sl.IsRow) rowLines[sl.Index] = sl;
+        else columnLines[sl.Index] = sl;
+      }
+
       Stopwatch stopWatchGlobal = Stopwatch.StartNew();
       Int32 iteration = 0;
 
@@ -203,74 +210,19 @@ namespace Griddler_Solver
         Stopwatch stopWatchIteration = Stopwatch.StartNew();
 
         iteration++;
-        UInt64 currentPermutationsCount = 0;
-
-        List<SolverLine> listSolverLineFiltered = new List<SolverLine>(listSolverLine.Count);
-        foreach (SolverLine solverLine in listSolverLine)
-        {
-          if (!solverLine.IsSolved)
-          {
-            listSolverLineFiltered.Add(solverLine);
-          }
-        }
-
-        Boolean changed = false;
-        UInt64 permutationsMinLimit = UInt64.MaxValue;
-        Object syncLock = new Object();
 
         Config.TicksCurrentIterationTimer = Config.TicksCurrentIterationStart = DateTime.Now.Ticks;
         Config.IterationPrefixLength = 9 + $"{iteration}".Length; // [mm:ss] = 7, [ + ] = 2
 
+        Boolean changed = false;
+        UInt64 currentPermutationsCount = 0;
+        UInt64 permutationsMinLimit = UInt64.MaxValue;
+
         if (Config.PermutationAnalysisEnabled)
         {
-          var options = new ParallelOptions { MaxDegreeOfParallelism = Config.MultithreadEnabled ? -1 : 1 };
-          Parallel.ForEach(listSolverLineFiltered, options, solverLine =>
-          {
-            if (Config.Break)
-            {
-              return;
-            }
-
-            Boolean isDirty = solverLine.IsRow ? Board.IsRowDirty(solverLine.Index) : Board.IsColumnDirty(solverLine.Index);
-            if (!isDirty)
-            {
-              return;
-            }
-
-            Thread.CurrentThread.Name = "SolverLine " + solverLine.ToString();
-
-            UInt64 maxPermutationsCount = solverLine.MaxPermutationsCount;
-            if (maxPermutationsCount > permutationsLimit)
-            {
-              lock (syncLock)
-              {
-                permutationsMinLimit = Math.Min(permutationsMinLimit, maxPermutationsCount);
-              }
-              Config.Progress?.AddDebugMessage($"{solverLine} skipped, permutations limit {permutationsLimit}");
-              return;
-            }
-
-            if (solverLine.IsRow)
-            {
-              Board.ClearRowDirty(solverLine.Index);
-            }
-            else
-            {
-              Board.ClearColumnDirty(solverLine.Index);
-            }
-
-            if (solverLine.IterationOfGenerating == 0)
-            {
-              solverLine.IterationOfGenerating = iteration;
-            }
-
-            solverLine.Solve();
-            lock (syncLock)
-            {
-              currentPermutationsCount += solverLine.CurrentPermutationsCount;
-              changed |= solverLine.Changed;
-            }
-          });
+          (changed, currentPermutationsCount, permutationsMinLimit, permutationsLimit) =
+              ProcessWorkQueue(listSolverLine, rowLines, columnLines,
+                               permutationsLimit, iteration);
         }
 
         // Contradiction detection — only when we've made a guess (stack non-empty)
@@ -413,6 +365,222 @@ namespace Griddler_Solver
       Board.Iterations = iteration;
       Board.TimeTaken = stopWatchGlobal.Elapsed;
     }
+    private (Boolean AnyChanged, UInt64 TotalPermutations, UInt64 PermutationsMinLimit, UInt64 FinalLimit)
+        ProcessWorkQueue(
+            List<SolverLine> listSolverLine,
+            SolverLine[] rowLines,
+            SolverLine[] columnLines,
+            UInt64 permutationsLimit,
+            Int32 iteration)
+    {
+      var queue = new ConcurrentQueue<SolverLine>();
+      var inSystem = new ConcurrentDictionary<LineKey, byte>();
+      Int32 pendingItems = 0;
+      var drainComplete = new ManualResetEventSlim(false);
+      Boolean anyChanged = false;
+      UInt64 totalPermutations = 0;
+      UInt64 permutationsMinLimit = UInt64.MaxValue;
+      UInt64 currentLimit = permutationsLimit;
+      Object syncLock = new Object();
+
+      // Local helper: try to enqueue a line if dirty, unsolved, within limit, and not already in system
+      void TryEnqueue(SolverLine line)
+      {
+        if (line.IsSolved)
+        {
+          return;
+        }
+
+        Boolean dirty = line.IsRow ? Board.IsRowDirty(line.Index) : Board.IsColumnDirty(line.Index);
+        if (!dirty)
+        {
+          return;
+        }
+
+        if (line.MaxPermutationsCount > currentLimit)
+        {
+          lock (syncLock)
+          {
+            permutationsMinLimit = Math.Min(permutationsMinLimit, line.MaxPermutationsCount);
+          }
+          return;
+        }
+
+        var key = new LineKey(line.IsRow, line.Index);
+        if (inSystem.TryAdd(key, 0))
+        {
+          Interlocked.Increment(ref pendingItems);
+          queue.Enqueue(line);
+        }
+      }
+
+      // Seed the queue with all eligible lines
+      foreach (SolverLine solverLine in listSolverLine)
+      {
+        TryEnqueue(solverLine);
+      }
+
+      if (Volatile.Read(ref pendingItems) == 0)
+      {
+        return (false, 0, permutationsMinLimit, currentLimit);
+      }
+
+      // Worker procedure
+      void WorkerProc()
+      {
+        while (!Config.Break)
+        {
+          if (!queue.TryDequeue(out SolverLine? line))
+          {
+            if (Volatile.Read(ref pendingItems) <= 0)
+            {
+              break;
+            }
+            Thread.Sleep(1);
+            continue;
+          }
+
+          var lineKey = new LineKey(line.IsRow, line.Index);
+
+          // Clear dirty BEFORE reading snapshot (same as original code)
+          if (line.IsRow)
+          {
+            Board.ClearRowDirty(line.Index);
+          }
+          else
+          {
+            Board.ClearColumnDirty(line.Index);
+          }
+
+          // Solve: GetRow/GetColumn locked, GeneratePermutations local, MergeRow/MergeColumn locked
+          Interlocked.Increment(ref Config.ActiveWorkers);
+          line.Solve();
+          Interlocked.Decrement(ref Config.ActiveWorkers);
+
+          // Accumulate results
+          lock (syncLock)
+          {
+            totalPermutations += line.CurrentPermutationsCount;
+            anyChanged |= line.Changed;
+          }
+
+          // Remove from tracking (allows re-enqueue if dirty again)
+          inSystem.TryRemove(lineKey, out _);
+
+          // Re-check: self became dirty during processing? (cross-line merge dirtied us)
+          TryEnqueue(line);
+
+          // Enqueue affected cross-lines
+          if (line.Changed)
+          {
+            if (line.IsRow)
+            {
+              for (Int32 c = 0; c < Board.ColumnCount; c++)
+              {
+                if (Board.IsColumnDirty(c))
+                {
+                  TryEnqueue(columnLines[c]);
+                }
+              }
+            }
+            else
+            {
+              for (Int32 r = 0; r < Board.RowCount; r++)
+              {
+                if (Board.IsRowDirty(r))
+                {
+                  TryEnqueue(rowLines[r]);
+                }
+              }
+            }
+          }
+
+          // Signal completion of this item
+          if (Interlocked.Decrement(ref pendingItems) <= 0)
+          {
+            drainComplete.Set();
+          }
+        }
+      }
+
+      // Dispatch workers
+      Int32 maxWorkers = Config.MultithreadEnabled ? Environment.ProcessorCount : 1;
+      var workersExited = new CountdownEvent(maxWorkers);
+
+      for (Int32 i = 0; i < maxWorkers; i++)
+      {
+        ThreadPool.QueueUserWorkItem(_ =>
+        {
+          try
+          {
+            WorkerProc();
+          }
+          finally
+          {
+            workersExited.Signal();
+          }
+        });
+      }
+
+      // Wait for queue to drain and all workers to exit
+      drainComplete.Wait();
+      workersExited.Wait();
+
+      return (anyChanged, totalPermutations, permutationsMinLimit, currentLimit);
+    }
+
+    public static String FormatNumber(UInt64 value)
+    {
+      if (value >= 1_000_000_000_000_000)
+      {
+        return (value / 1_000_000_000_000_000.0).ToString("F1", CultureInfo.InvariantCulture) + "P";
+      }
+      if (value >= 1_000_000_000_000)
+      {
+        return (value / 1_000_000_000_000.0).ToString("F1", CultureInfo.InvariantCulture) + "T";
+      }
+      if (value >= 1_000_000_000)
+      {
+        return (value / 1_000_000_000.0).ToString("F1", CultureInfo.InvariantCulture) + "G";
+      }
+      if (value >= 1_000_000)
+      {
+        return (value / 1_000_000.0).ToString("F1", CultureInfo.InvariantCulture) + "M";
+      }
+      if (value >= 1_000)
+      {
+        return (value / 1_000.0).ToString("F1", CultureInfo.InvariantCulture) + "k";
+      }
+      return value.ToString();
+    }
+
+    private static Int32 CalculateScore(Hint[] hints)
+    {
+      return hints.Length + hints.Sum(hint => hint.Count * 2);
+    }
+
+    private static Int32 FindFirstOrNext(CellValue[] line, Int32 indexStart)
+    {
+      for (Int32 indexLine = indexStart; indexLine < line.Length; indexLine++)
+      {
+        if (line[indexLine] == CellValue.Background)
+        {
+          continue;
+        }
+        else
+        {
+          return indexLine;
+        }
+      }
+
+      return -1;
+    }
+
+    private static CellValue GetCellValue(CellValue[] line, Int32 index)
+    {
+      return index >= line.Length ? CellValue.OutOfBorder : line[index];
+    }
+
     private (Int32 row, Int32 col) FindBestGuessCell()
     {
       // Find the row with fewest Unknown cells (most constrained)
@@ -534,27 +702,6 @@ namespace Griddler_Solver
         return;
       }
 
-      // find first available cell on line
-      Int32 findFirstOrNext(Int32 indexStart)
-      {
-        for (Int32 indexLine = indexStart; indexLine < line.Length; indexLine++)
-        {
-          if (line[indexLine] == CellValue.Background)
-          {
-            continue;
-          }
-          else
-          {
-            return indexLine;
-          }
-        }
-
-        return -1;
-      }
-      CellValue getCellValue(Int32 index)
-      {
-        return index >= line.Length ? CellValue.OutOfBorder : line[index];
-      }
       void createStaticAnalysis(Boolean setColor, CellValue[] line, Int32 indexOnLine)
       {
         Int32 Row = isRow ? index : indexOnLine;
@@ -593,7 +740,7 @@ namespace Griddler_Solver
         });
       }
 
-      Int32 indexOnLine = findFirstOrNext(0);
+      Int32 indexOnLine = FindFirstOrNext(line, 0);
 
       Boolean itFits = true;
       for (Int32 indexHint = 0; indexHint < hints.Length; indexHint++)
@@ -608,7 +755,7 @@ namespace Griddler_Solver
             for (Int32 inHintCounter = 0; inHintCounter < hint.Count; inHintCounter++)
             {
               indexOnLine++;
-              if (getCellValue(indexOnLine) != CellValue.Color)
+              if (GetCellValue(line, indexOnLine) != CellValue.Color)
               {
                 itFits = false;
                 break;
@@ -618,7 +765,7 @@ namespace Griddler_Solver
             if (itFits)
             {
               indexOnLine++;
-              if (getCellValue(indexOnLine) == CellValue.Background)
+              if (GetCellValue(line, indexOnLine) == CellValue.Background)
               {
                 createStaticAnalysis(false, line, indexOnLine - hint.Count - 1);
                 hint.IsSolved = true;
@@ -632,11 +779,11 @@ namespace Griddler_Solver
             for (Int32 inHintCounter = 1; inHintCounter < hint.Count; inHintCounter++)
             {
               indexOnLine++;
-              if (getCellValue(indexOnLine) == CellValue.Unknown)
+              if (GetCellValue(line, indexOnLine) == CellValue.Unknown)
               {
                 createStaticAnalysis(true, line, indexOnLine);
               }
-              else if (getCellValue(indexOnLine) != CellValue.Color)
+              else if (GetCellValue(line, indexOnLine) != CellValue.Color)
               {
                 itFits = false;
                 break;
@@ -645,7 +792,7 @@ namespace Griddler_Solver
             if (itFits)
             {
               indexOnLine++;
-              if (getCellValue(indexOnLine) == CellValue.Unknown)
+              if (GetCellValue(line, indexOnLine) == CellValue.Unknown)
               {
                 createStaticAnalysis(false, line, indexOnLine);
               }
@@ -667,7 +814,7 @@ namespace Griddler_Solver
           break;
         }
 
-        indexOnLine = findFirstOrNext(indexOnLine);
+        indexOnLine = FindFirstOrNext(line, indexOnLine);
         if (indexOnLine == -1)
         {
           break;

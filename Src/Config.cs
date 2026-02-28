@@ -40,5 +40,7 @@ namespace Griddler_Solver
     { get; set; } = DateTime.Now.Ticks;
     public Int32 IterationPrefixLength
     { get; set; }
+
+    public Int32 ActiveWorkers;
   }
 }
