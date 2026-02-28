@@ -42,5 +42,6 @@ namespace Griddler_Solver
     { get; set; }
 
     public Int32 ActiveWorkers;
+    public volatile Boolean ContradictionDetected;
   }
 }

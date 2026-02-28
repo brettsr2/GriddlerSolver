@@ -162,7 +162,7 @@ namespace Griddler_Solver
 
     private void GeneratePermutations(CellValue[] lineOrigin, Hint[] hints)
     {
-      if (Config.Break)
+      if (Config.Break || Config.ContradictionDetected)
       {
         return;
       }
@@ -190,7 +190,7 @@ namespace Griddler_Solver
       GeneratePermutations(bmOrigin, bmLine, beginIndex, hints, 0, remainingHintCells, maxHintCellCount);
 
       // Fallback: if the optimized pass found 0 permutations, retry without optimization
-      if (_PermutationCount == 0 && optimized && !Config.Break)
+      if (_PermutationCount == 0 && optimized && !Config.Break && !Config.ContradictionDetected)
       {
         _HasMergedLine = false;
         _PermutationCount = 0;
@@ -202,7 +202,7 @@ namespace Griddler_Solver
     }
     private void GeneratePermutations(LineBitmask lineOrigin, LineBitmask line, Int32 startIndex, Hint[] hints, Int32 hintIndex, Int32 remainingHintCells, Int32 maxHintCellCount)
     {
-      if (Config.Break)
+      if (Config.Break || Config.ContradictionDetected)
       {
         return;
       }

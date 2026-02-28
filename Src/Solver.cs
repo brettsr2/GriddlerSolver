@@ -215,29 +215,21 @@ namespace Griddler_Solver
         Config.IterationPrefixLength = 9 + $"{iteration}".Length; // [mm:ss] = 7, [ + ] = 2
 
         Boolean changed = false;
+        Boolean contradiction = false;
         UInt64 currentPermutationsCount = 0;
         UInt64 permutationsMinLimit = UInt64.MaxValue;
 
         if (Config.PermutationAnalysisEnabled)
         {
-          (changed, currentPermutationsCount, permutationsMinLimit, permutationsLimit) =
+          (changed, currentPermutationsCount, permutationsMinLimit, permutationsLimit, contradiction) =
               ProcessWorkQueue(listSolverLine, rowLines, columnLines,
                                permutationsLimit, iteration);
         }
 
-        // Contradiction detection — only when we've made a guess (stack non-empty)
-        if (_backtrackStack.Count > 0)
+        // Immediate contradiction handling — backtrack without waiting for all workers
+        if (contradiction)
         {
-          Boolean contradiction = false;
-          foreach (var solverLine in listSolverLine)
-          {
-            if (solverLine.HasContradiction)
-            {
-              contradiction = true;
-              break;
-            }
-          }
-          if (contradiction)
+          if (_backtrackStack.Count > 0)
           {
             Boolean foundAlternative = false;
             while (_backtrackStack.Count > 0)
@@ -279,6 +271,11 @@ namespace Griddler_Solver
             StaticAnalysis();
             OverlapAnalysis();
             continue;
+          }
+          else
+          {
+            Config.Progress?.AddMessage("Contradiction detected. Puzzle has no solution.");
+            break;
           }
         }
 
@@ -365,7 +362,7 @@ namespace Griddler_Solver
       Board.Iterations = iteration;
       Board.TimeTaken = stopWatchGlobal.Elapsed;
     }
-    private (Boolean AnyChanged, UInt64 TotalPermutations, UInt64 PermutationsMinLimit, UInt64 FinalLimit)
+    private (Boolean AnyChanged, UInt64 TotalPermutations, UInt64 PermutationsMinLimit, UInt64 FinalLimit, Boolean Contradiction)
         ProcessWorkQueue(
             List<SolverLine> listSolverLine,
             SolverLine[] rowLines,
@@ -373,6 +370,8 @@ namespace Griddler_Solver
             UInt64 permutationsLimit,
             Int32 iteration)
     {
+      Config.ContradictionDetected = false;
+
       var queue = new ConcurrentQueue<SolverLine>();
       var inSystem = new ConcurrentDictionary<LineKey, byte>();
       Int32 pendingItems = 0;
@@ -386,6 +385,11 @@ namespace Griddler_Solver
       // Local helper: try to enqueue a line if dirty, unsolved, within limit, and not already in system
       void TryEnqueue(SolverLine line)
       {
+        if (Config.ContradictionDetected)
+        {
+          return;
+        }
+
         if (line.IsSolved)
         {
           return;
@@ -422,7 +426,7 @@ namespace Griddler_Solver
 
       if (Volatile.Read(ref pendingItems) == 0)
       {
-        return (false, 0, permutationsMinLimit, currentLimit);
+        return (false, 0, permutationsMinLimit, currentLimit, false);
       }
 
       // Worker procedure
@@ -442,6 +446,17 @@ namespace Griddler_Solver
 
           var lineKey = new LineKey(line.IsRow, line.Index);
 
+          // Contradiction already detected by another worker — skip processing
+          if (Config.ContradictionDetected)
+          {
+            inSystem.TryRemove(lineKey, out _);
+            if (Interlocked.Decrement(ref pendingItems) <= 0)
+            {
+              drainComplete.Set();
+            }
+            continue;
+          }
+
           // Clear dirty BEFORE reading snapshot (same as original code)
           if (line.IsRow)
           {
@@ -457,6 +472,23 @@ namespace Griddler_Solver
           line.Solve();
           Interlocked.Decrement(ref Config.ActiveWorkers);
 
+          // Immediate contradiction detection — signal all workers to stop
+          if (line.HasContradiction)
+          {
+            Config.ContradictionDetected = true;
+
+            // Drain remaining queue items
+            while (queue.TryDequeue(out var discarded))
+            {
+              var dKey = new LineKey(discarded.IsRow, discarded.Index);
+              inSystem.TryRemove(dKey, out _);
+              if (Interlocked.Decrement(ref pendingItems) <= 0)
+              {
+                drainComplete.Set();
+              }
+            }
+          }
+
           // Accumulate results
           lock (syncLock)
           {
@@ -467,29 +499,33 @@ namespace Griddler_Solver
           // Remove from tracking (allows re-enqueue if dirty again)
           inSystem.TryRemove(lineKey, out _);
 
-          // Re-check: self became dirty during processing? (cross-line merge dirtied us)
-          TryEnqueue(line);
-
-          // Enqueue affected cross-lines
-          if (line.Changed)
+          // Re-check and enqueue cross-lines only if no contradiction
+          if (!Config.ContradictionDetected)
           {
-            if (line.IsRow)
+            // Re-check: self became dirty during processing? (cross-line merge dirtied us)
+            TryEnqueue(line);
+
+            // Enqueue affected cross-lines
+            if (line.Changed)
             {
-              for (Int32 c = 0; c < Board.ColumnCount; c++)
+              if (line.IsRow)
               {
-                if (Board.IsColumnDirty(c))
+                for (Int32 c = 0; c < Board.ColumnCount; c++)
                 {
-                  TryEnqueue(columnLines[c]);
+                  if (Board.IsColumnDirty(c))
+                  {
+                    TryEnqueue(columnLines[c]);
+                  }
                 }
               }
-            }
-            else
-            {
-              for (Int32 r = 0; r < Board.RowCount; r++)
+              else
               {
-                if (Board.IsRowDirty(r))
+                for (Int32 r = 0; r < Board.RowCount; r++)
                 {
-                  TryEnqueue(rowLines[r]);
+                  if (Board.IsRowDirty(r))
+                  {
+                    TryEnqueue(rowLines[r]);
+                  }
                 }
               }
             }
@@ -526,7 +562,7 @@ namespace Griddler_Solver
       drainComplete.Wait();
       workersExited.Wait();
 
-      return (anyChanged, totalPermutations, permutationsMinLimit, currentLimit);
+      return (anyChanged, totalPermutations, permutationsMinLimit, currentLimit, Config.ContradictionDetected);
     }
 
     public static String FormatNumber(UInt64 value)
