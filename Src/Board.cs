@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace Griddler_Solver
 {
@@ -10,10 +11,10 @@ namespace Griddler_Solver
     private Boolean[] _DirtyRows = Array.Empty<Boolean>();
     private Boolean[] _DirtyColumns = Array.Empty<Boolean>();
 
-    public Boolean IsRowDirty(Int32 index) => _DirtyRows[index];
-    public Boolean IsColumnDirty(Int32 index) => _DirtyColumns[index];
-    public void ClearRowDirty(Int32 index) => _DirtyRows[index] = false;
-    public void ClearColumnDirty(Int32 index) => _DirtyColumns[index] = false;
+    public Boolean IsRowDirty(Int32 index) => Volatile.Read(ref _DirtyRows[index]);
+    public Boolean IsColumnDirty(Int32 index) => Volatile.Read(ref _DirtyColumns[index]);
+    public void ClearRowDirty(Int32 index) => Volatile.Write(ref _DirtyRows[index], false);
+    public void ClearColumnDirty(Int32 index) => Volatile.Write(ref _DirtyColumns[index], false);
 
     public Boolean IsSolved
     {
@@ -59,8 +60,8 @@ namespace Griddler_Solver
           _Board[row, column] = value;
           if (_DirtyRows.Length > 0)
           {
-            _DirtyRows[row] = true;
-            _DirtyColumns[column] = true;
+            Volatile.Write(ref _DirtyRows[row], true);
+            Volatile.Write(ref _DirtyColumns[column], true);
           }
         }
       }
@@ -168,7 +169,7 @@ namespace Griddler_Solver
           if (_Board[row, indexColumn] == CellValue.Unknown && column[row] != CellValue.Unknown)
           {
             _Board[row, indexColumn] = column[row];
-            _DirtyRows[row] = true;
+            Volatile.Write(ref _DirtyRows[row], true);
           }
         }
       }
@@ -182,7 +183,7 @@ namespace Griddler_Solver
           if (_Board[indexRow, column] == CellValue.Unknown && row[column] != CellValue.Unknown)
           {
             _Board[indexRow, column] = row[column];
-            _DirtyColumns[column] = true;
+            Volatile.Write(ref _DirtyColumns[column], true);
           }
         }
       }

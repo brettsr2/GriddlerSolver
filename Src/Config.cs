@@ -6,8 +6,7 @@ namespace Griddler_Solver
   {
     public String Name
     { get; set; } = String.Empty;
-    public Boolean Break
-    { get; set; } = false;
+    public volatile Boolean Break;
 
     public Boolean Draw
     { get; set; }
@@ -32,10 +31,8 @@ namespace Griddler_Solver
     public Boolean StepMode
     { get; set; }
 
-    public Int64 TicksCurrentIterationStart
-    { get; set; }
-    public Int64 TicksCurrentIterationTimer
-    { get; set; }
+    public Int64 TicksCurrentIterationStart;
+    public Int64 TicksCurrentIterationTimer;
     public Int64 TicksStart
     { get; set; } = DateTime.Now.Ticks;
     public Int32 IterationPrefixLength

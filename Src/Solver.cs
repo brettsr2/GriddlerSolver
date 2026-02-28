@@ -619,32 +619,45 @@ namespace Griddler_Solver
 
     private (Int32 row, Int32 col) FindBestGuessCell()
     {
-      // Find the row with fewest Unknown cells (most constrained)
-      Int32 bestRow = -1, bestCol = -1;
-      Int32 fewestUnknowns = Int32.MaxValue;
+      // Pre-compute unknown counts per row and per column
+      Int32[] unknownsPerRow = new Int32[Board.RowCount];
+      Int32[] unknownsPerCol = new Int32[Board.ColumnCount];
 
       for (Int32 row = 0; row < Board.RowCount; row++)
       {
-        Int32 unknownCount = 0;
-        Int32 firstUnknownCol = -1;
+        for (Int32 col = 0; col < Board.ColumnCount; col++)
+        {
+          if (Board[row, col] == CellValue.Unknown)
+          {
+            unknownsPerRow[row]++;
+            unknownsPerCol[col]++;
+          }
+        }
+      }
+
+      // Find the unknown cell with the lowest combined score (most constrained)
+      Int32 bestRow = -1, bestCol = -1;
+      Int32 bestScore = Int32.MaxValue;
+
+      for (Int32 row = 0; row < Board.RowCount; row++)
+      {
+        if (unknownsPerRow[row] == 0)
+        {
+          continue;
+        }
 
         for (Int32 col = 0; col < Board.ColumnCount; col++)
         {
           if (Board[row, col] == CellValue.Unknown)
           {
-            unknownCount++;
-            if (firstUnknownCol == -1)
+            Int32 score = unknownsPerRow[row] + unknownsPerCol[col];
+            if (score < bestScore)
             {
-              firstUnknownCol = col;
+              bestScore = score;
+              bestRow = row;
+              bestCol = col;
             }
           }
-        }
-
-        if (unknownCount > 0 && unknownCount < fewestUnknowns)
-        {
-          fewestUnknowns = unknownCount;
-          bestRow = row;
-          bestCol = firstUnknownCol;
         }
       }
 
