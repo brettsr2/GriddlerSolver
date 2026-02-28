@@ -61,7 +61,7 @@ namespace Griddler_Solver
       Boolean[] hintSolved = new Boolean[hints.Length];
       Boolean anyChanged = false;
 
-      // Color overlap: cells that are covered in both leftmost and rightmost
+      // Color overlap
       for (Int32 i = 0; i < hints.Length; i++)
       {
         Int32 overlapStart = rightStart[i];
@@ -74,6 +74,26 @@ namespace Griddler_Solver
             result[j] = CellValue.Color;
             anyChanged = true;
           }
+        }
+      }
+
+      // Unreachable cells: not in any hint's possible range → Background
+      Boolean[] reachable = new Boolean[line.Length];
+      for (Int32 i = 0; i < hints.Length; i++)
+      {
+        Int32 rangeStart = leftStart[i];
+        Int32 rangeEnd = rightStart[i] + hints[i].Count - 1;
+        for (Int32 j = rangeStart; j <= rangeEnd; j++)
+        {
+          reachable[j] = true;
+        }
+      }
+      for (Int32 j = 0; j < line.Length; j++)
+      {
+        if (!reachable[j] && line[j] == CellValue.Unknown)
+        {
+          result[j] = CellValue.Background;
+          anyChanged = true;
         }
       }
 
