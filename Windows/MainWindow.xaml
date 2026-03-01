@@ -49,7 +49,7 @@
       <Button x:Name="buttonClearBoard" Margin="4 6 4 0" MinHeight="26" Click="OnButtonClearBoard_Click" Content="Clear board"/>
       <Button x:Name="buttonSolve" Margin="4 8 4 0" MinHeight="26" Click="OnButtonSolve_Click" Content="Solve"/>
       <Separator Margin="4 8 4 0"/>
-      <Label x:Name="labelCoordinates" Margin="0 8 0 0" Padding="4 0" VerticalAlignment="Center"/>
+      <Label x:Name="labelCoordinates" Margin="0 8 0 0" MinWidth="130" Padding="4 0" VerticalAlignment="Center"/>
     </StackPanel>
   </Grid>
 </Window>

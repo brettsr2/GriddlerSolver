@@ -152,6 +152,7 @@ namespace Griddler_Solver
       var inSystem = new ConcurrentDictionary<LineKey, byte>();
       Int32 pendingItems = 0;
       var drainComplete = new ManualResetEventSlim(false);
+      var workAvailable = new SemaphoreSlim(0);
 
       // Local helper: try to enqueue a line if dirty, unsolved, and not already in system
       void TryEnqueue(SolverLine line)
@@ -177,6 +178,7 @@ namespace Griddler_Solver
         {
           Interlocked.Increment(ref pendingItems);
           queue.Enqueue(line);
+          workAvailable.Release();
         }
       }
 
@@ -202,7 +204,7 @@ namespace Griddler_Solver
             {
               break;
             }
-            Thread.Sleep(1);
+            workAvailable.Wait(50);
             continue;
           }
 
@@ -284,9 +286,14 @@ namespace Griddler_Solver
         });
       }
 
-      // Wait for queue to drain and all workers to exit
+      // Wait for queue to drain, wake sleeping workers, then wait for all to exit
       drainComplete.Wait();
+      for (Int32 workerIndex = 0; workerIndex < maxWorkers; workerIndex++)
+      {
+        workAvailable.Release();
+      }
       workersExited.Wait();
+      workAvailable.Dispose();
     }
 
   }
