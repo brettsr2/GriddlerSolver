@@ -188,8 +188,14 @@ namespace Griddler_Solver
       SolverLine[] columnLines = new SolverLine[Board.ColumnCount];
       foreach (SolverLine sl in listSolverLine)
       {
-        if (sl.IsRow) rowLines[sl.Index] = sl;
-        else columnLines[sl.Index] = sl;
+        if (sl.IsRow)
+        {
+          rowLines[sl.Index] = sl;
+        }
+        else
+        {
+          columnLines[sl.Index] = sl;
+        }
       }
 
       Stopwatch stopWatchGlobal = Stopwatch.StartNew();

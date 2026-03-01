@@ -131,41 +131,29 @@ namespace Griddler_Solver
         return clone;
       }
 
-      // Try segmentation before full PA
-      if (TrySolveSegmented(line, hints, clone))
-      {
-        return clone;
-      }
-
-      _HasMergedLine = false;
-      _PermutationCount = 0;
-
-      GeneratePermutations(line, hints);
-
-      if (Config.Break)
-      {
-        return clone;
-      }
-
-      if (!_HasMergedLine && _PermutationCount == 0)
+      // Cell probing via LineOverlap — O(N²K), mathematically equivalent
+      // to PA for single-cell deductions but polynomial instead of exponential.
+      var overlapResult = LineOverlap.Solve(clone, hints);
+      if (overlapResult == null)
       {
         HasContradiction = true;
         return clone;
       }
-
-      if (_HasMergedLine)
+      if (overlapResult.Changed)
       {
-        CellValue[] merged = _MergedLine.ToLine();
-        for (Int32 index = 0; index < clone.Length; index++)
+        Changed = true;
+        for (Int32 j = 0; j < clone.Length; j++)
         {
-          if (clone[index] == CellValue.Unknown && merged[index] != CellValue.Unknown)
+          if (overlapResult.Deductions[j] is CellValue val)
           {
-            Changed = true;
-            clone[index] = merged[index];
+            clone[j] = val;
           }
         }
       }
-
+      if (IsLineFull(clone))
+      {
+        IsSolved = true;
+      }
       return clone;
     }
 
