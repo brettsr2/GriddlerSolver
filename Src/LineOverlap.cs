@@ -140,7 +140,7 @@ namespace Griddler_Solver
       };
     }
 
-    private static Boolean TryFitLeft(CellValue[] line, Hint[] hints, Int32 hintIdx, Int32 startPos, Int32[] result)
+    internal static Boolean TryFitLeft(CellValue[] line, Hint[] hints, Int32 hintIdx, Int32 startPos, Int32[] result)
     {
       Int32 n = line.Length;
 
@@ -226,7 +226,7 @@ namespace Griddler_Solver
       return false;
     }
 
-    private static Boolean TryFitRight(CellValue[] line, Hint[] hints, Int32[] rightStart)
+    internal static Boolean TryFitRight(CellValue[] line, Hint[] hints, Int32[] rightStart)
     {
       Int32 n = line.Length;
       Int32 k = hints.Length;

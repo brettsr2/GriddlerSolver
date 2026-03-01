@@ -129,6 +129,12 @@ namespace Griddler_Solver
         return clone;
       }
 
+      // Try segmentation before full PA
+      if (TrySolveSegmented(line, hints, clone))
+      {
+        return clone;
+      }
+
       _HasMergedLine = false;
       _PermutationCount = 0;
 
@@ -289,6 +295,152 @@ namespace Griddler_Solver
           }
         }
       }
+    }
+
+    private Boolean TrySolveSegmented(CellValue[] line, Hint[] hints, CellValue[] clone)
+    {
+      // 1. Find segments (groups of non-Background cells separated by Background)
+      var segments = FindSegments(line);
+      if (segments.Count <= 1)
+        return false; // 0-1 segments = no benefit
+
+      // 2. Get hint ranges via TryFitLeft/TryFitRight on the FULL line
+      Int32[] leftStart = new Int32[hints.Length];
+      if (!LineOverlap.TryFitLeft(line, hints, 0, 0, leftStart))
+      {
+        HasContradiction = true;
+        return true; // contradiction = handled
+      }
+      Int32[] rightStart = new Int32[hints.Length];
+      if (!LineOverlap.TryFitRight(line, hints, rightStart))
+      {
+        HasContradiction = true;
+        return true;
+      }
+
+      // 3. Map each hint to exactly one segment
+      Int32[] hintSegment = new Int32[hints.Length];
+      for (Int32 i = 0; i < hints.Length; i++)
+      {
+        Int32 rangeStart = leftStart[i];
+        Int32 rangeEnd = rightStart[i] + hints[i].Count - 1;
+
+        Int32 seg = FindSegmentContaining(segments, rangeStart, rangeEnd);
+        if (seg < 0)
+          return false; // hint spans multiple segments → fallback to full PA
+        hintSegment[i] = seg;
+      }
+
+      // 4. For each segment: extract sub-line + sub-hints, run PA
+      for (Int32 seg = 0; seg < segments.Count; seg++)
+      {
+        var (segStart, segEnd) = segments[seg];
+        Int32 segLen = segEnd - segStart + 1;
+
+        // Extract sub-line
+        CellValue[] subLine = new CellValue[segLen];
+        Array.Copy(line, segStart, subLine, 0, segLen);
+
+        // Extract sub-hints for this segment
+        List<Hint> subHintsList = new();
+        for (Int32 i = 0; i < hints.Length; i++)
+        {
+          if (hintSegment[i] == seg)
+            subHintsList.Add(hints[i]);
+        }
+        Hint[] subHints = subHintsList.ToArray();
+
+        // If no hints for this segment and it has Unknown cells, they become Background
+        if (subHints.Length == 0)
+        {
+          for (Int32 i = 0; i < segLen; i++)
+          {
+            if (clone[segStart + i] == CellValue.Unknown)
+            {
+              Changed = true;
+              clone[segStart + i] = CellValue.Background;
+            }
+          }
+          continue;
+        }
+
+        // Reset state + run PA on sub-line
+        _HasMergedLine = false;
+        _PermutationCount = 0;
+        _EarlyTerminated = false;
+        GeneratePermutations(subLine, subHints);
+
+        if (Config.Break || Config.ContradictionDetected)
+          return true;
+
+        // 0 permutations → contradiction
+        if (!_HasMergedLine && _PermutationCount == 0)
+        {
+          HasContradiction = true;
+          return true;
+        }
+
+        // Copy deductions back into clone (with offset = segStart)
+        if (_HasMergedLine)
+        {
+          CellValue[] merged = _MergedLine.ToLine();
+          for (Int32 i = 0; i < segLen; i++)
+          {
+            if (clone[segStart + i] == CellValue.Unknown
+                && merged[i] != CellValue.Unknown)
+            {
+              Changed = true;
+              clone[segStart + i] = merged[i];
+            }
+          }
+        }
+      }
+
+      return true; // segmentation handled
+    }
+
+    /// <summary>
+    /// Finds segments: groups of contiguous non-Background cells.
+    /// Returns list of (startIndex, endIndex) inclusive.
+    /// </summary>
+    private static List<(Int32 Start, Int32 End)> FindSegments(CellValue[] line)
+    {
+      var segments = new List<(Int32, Int32)>();
+      Int32 segStart = -1;
+      for (Int32 i = 0; i < line.Length; i++)
+      {
+        if (line[i] == CellValue.Background)
+        {
+          if (segStart >= 0)
+          {
+            segments.Add((segStart, i - 1));
+            segStart = -1;
+          }
+        }
+        else
+        {
+          if (segStart < 0)
+            segStart = i;
+        }
+      }
+      if (segStart >= 0)
+        segments.Add((segStart, line.Length - 1));
+      return segments;
+    }
+
+    /// <summary>
+    /// Returns the index of the segment that fully contains [rangeStart, rangeEnd],
+    /// or -1 if the hint spans multiple segments.
+    /// </summary>
+    private static Int32 FindSegmentContaining(
+        List<(Int32 Start, Int32 End)> segments, Int32 rangeStart, Int32 rangeEnd)
+    {
+      for (Int32 i = 0; i < segments.Count; i++)
+      {
+        if (rangeStart >= segments[i].Start && rangeEnd <= segments[i].End)
+          return i;
+      }
+      return -1;
     }
 
     private void FillEmptyCells(CellValue[] line)
