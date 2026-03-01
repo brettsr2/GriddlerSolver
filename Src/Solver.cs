@@ -2,10 +2,10 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
-using System.Globalization;
 using System.Threading;
 
 namespace Griddler_Solver
@@ -195,7 +195,7 @@ namespace Griddler_Solver
       Stopwatch stopWatchGlobal = Stopwatch.StartNew();
       Int32 iteration = 0;
 
-      UInt64 permutationsLimit = Config.PermutationsLimit ? 1000000 : UInt32.MaxValue;
+      UInt64 permutationsLimit = Config.PermutationsLimit ? 1 : UInt32.MaxValue;
 
       StaticAnalysis();
       OverlapAnalysis();
@@ -292,7 +292,8 @@ namespace Griddler_Solver
         {
           if (permutationsMinLimit < UInt64.MaxValue)
           {
-            permutationsLimit = permutationsMinLimit + 1;
+            // Exponential escalation: double the limit each time
+            permutationsLimit *= 2;
           }
           else
           {

@@ -83,6 +83,14 @@ namespace Griddler_Solver
       Bg1 &= perm.Bg1;
     }
 
+    public Boolean HasNewDeductions(LineBitmask origin)
+    {
+      MaskRange(0, Length, out ulong valid0, out ulong valid1);
+      ulong new0 = (Color0 | Bg0) & ~(origin.Color0 | origin.Bg0) & valid0;
+      ulong new1 = (Color1 | Bg1) & ~(origin.Color1 | origin.Bg1) & valid1;
+      return (new0 | new1) != 0;
+    }
+
     public Boolean HasColorInRange(Int32 start, Int32 count)
     {
       MaskRange(start, count, out ulong m0, out ulong m1);
