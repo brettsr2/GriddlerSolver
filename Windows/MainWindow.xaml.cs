@@ -3,12 +3,14 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace Griddler_Solver
 {
@@ -16,12 +18,9 @@ namespace Griddler_Solver
   {
     private String _FileDialogFilter = "JSON file (*.json)|*.json";
 
-#if DEBUG
-    private String _LogFile = "LogFile.txt";
-    private Object _LogFileLock = new Object();
-#endif
-
     private ProgressWindow? _ProgressWindow = null;
+    private DispatcherTimer? _refreshTimer;
+    private Stopwatch? _solveStopwatch;
 
     private Solver _Solver
     { get; set; } = new();
@@ -78,7 +77,6 @@ namespace Griddler_Solver
       parts.Add($"Size: [{_Solver.Board.ColumnCount}x{_Solver.Board.RowCount}x{countColors}]");
       if (_Solver.Board.IsSolved)
       {
-        parts.Add($"Iterations: {_Solver.Board.Iterations}");
         parts.Add($"Time elapsed: {_Solver.Board.TimeTaken.ToString(Solver.TimeFormat)}");
       }
 
@@ -89,25 +87,11 @@ namespace Griddler_Solver
 
     private void OnButtonSolve_Click(object sender, RoutedEventArgs e)
     {
-#if DEBUG
-      if (File.Exists(_LogFile))
-      {
-        File.Delete(_LogFile);
-      }
-#endif
-
       Config config = new Config()
       {
         Name = Name,
         Progress = this,
-        ScoreSortingEnabled = checkBoxScoreSorting.IsChecked == true,
-        PermutationAnalysisEnabled = checkBoxPermutationAnalysis.IsChecked == true,
         MultithreadEnabled = checkBoxMultithread.IsChecked == true,
-        PermutationsLimit = checkBoxPermutationsLimit.IsChecked == true,
-        StaticAnalysisEnabled = checkBoxStaticAnalysis.IsChecked == true,
-        OverlapAnalysisEnabled = checkBoxOverlapAnalysis.IsChecked == true,
-        BacktrackingEnabled = checkBoxBacktracking.IsChecked == true,
-        StepMode = checkBoxStepMode.IsChecked == true,
       };
 
       IsEnabled = false;
@@ -123,6 +107,12 @@ namespace Griddler_Solver
       _ProgressWindow.Top = Top;
 
       _ProgressWindow.Show();
+
+      _solveStopwatch = Stopwatch.StartNew();
+      _refreshTimer = new DispatcherTimer();
+      _refreshTimer.Interval = TimeSpan.FromSeconds(1);
+      _refreshTimer.Tick += OnRefreshTimer_Tick;
+      _refreshTimer.Start();
 
       Task.Run(() =>
       {
@@ -241,11 +231,6 @@ namespace Griddler_Solver
       _Solver.Clear();
       Draw();
     }
-    private void OnButtonInvert_Click(object sender, RoutedEventArgs e)
-    {
-      Boolean isChecked = checkBoxScoreSorting.IsChecked == true;
-      checkBoxScoreSorting.IsChecked = checkBoxPermutationAnalysis.IsChecked = checkBoxMultithread.IsChecked = checkBoxPermutationsLimit.IsChecked = checkBoxStaticAnalysis.IsChecked = checkBoxOverlapAnalysis.IsChecked = checkBoxBacktracking.IsChecked = !isChecked;
-    }
 
     private void OnCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
     {
@@ -262,34 +247,25 @@ namespace Griddler_Solver
 
     public void AddMessage(String message)
     {
-      AddDebugMessage(message);
-
       Dispatcher.Invoke(new Action(() =>
       {
         if (_ProgressWindow != null)
         {
           _ProgressWindow.textBoxOutput.AppendText(message + Environment.NewLine);
           _ProgressWindow.textBoxOutput.ScrollToEnd();
-
-          Draw();
         }
       }));
-    }
-    public void AddDebugMessage(String message)
-    {
-#if DEBUG
-      lock(_LogFileLock)
-      {
-        File.AppendAllText(_LogFile, message + Environment.NewLine);
-      }
-#endif
     }
 
     public void Completed()
     {
       Dispatcher.Invoke(new Action(() =>
       {
-        AddMessage($"Iterations: {_Solver.Board.Iterations}, Time elapsed: {_Solver.Board.TimeTaken.ToString(Solver.TimeFormat)}");
+        _refreshTimer?.Stop();
+        _refreshTimer = null;
+        _solveStopwatch = null;
+
+        AddMessage($"Time elapsed: {_Solver.Board.TimeTaken.ToString(Solver.TimeFormat)}");
         AddMessage($"End");
 
         IsEnabled = true;
@@ -300,6 +276,35 @@ namespace Griddler_Solver
     public void ProgressWindowClosed()
     {
       _Solver.Config.Break = true;
+      _refreshTimer?.Stop();
+    }
+
+    private void OnRefreshTimer_Tick(object? sender, EventArgs e)
+    {
+      if (_solveStopwatch == null)
+      {
+        return;
+      }
+
+      Int32 solvedCount = 0;
+      Int32 total = _Solver.Board.RowCount * _Solver.Board.ColumnCount;
+
+      for (Int32 row = 0; row < _Solver.Board.RowCount; row++)
+      {
+        for (Int32 col = 0; col < _Solver.Board.ColumnCount; col++)
+        {
+          if (_Solver.Board[row, col] != CellValue.Unknown)
+          {
+            solvedCount++;
+          }
+        }
+      }
+
+      Int32 percentSolved = total > 0 ? solvedCount * 100 / total : 0;
+      String elapsed = _solveStopwatch.Elapsed.ToString(Solver.TimeFormat);
+
+      AddMessage($"[{elapsed}] Solved: {solvedCount}({percentSolved}%)");
+      Draw();
     }
 
     private void OnWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -317,8 +322,8 @@ namespace Griddler_Solver
       Double x = point.X - originX;
       Double y = point.Y - originY;
 
-      Int32 row = (Int32)(x / _Solver.CellSize) + 1;
-      Int32 column = (Int32)(y / _Solver.CellSize) + 1;
+      Int32 column = (Int32)(x / _Solver.CellSize) + 1;
+      Int32 row = (Int32)(y / _Solver.CellSize) + 1;
       labelCoordinates.Content = $"Row: {row}, Column: {column}";
     }
   }

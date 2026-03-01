@@ -11,6 +11,11 @@ namespace Griddler_Solver
     private Boolean[] _DirtyRows = Array.Empty<Boolean>();
     private Boolean[] _DirtyColumns = Array.Empty<Boolean>();
 
+    private Int32 _Version;
+
+    [JsonIgnore]
+    public Int32 Version => Volatile.Read(ref _Version);
+
     public Boolean IsRowDirty(Int32 index) => Volatile.Read(ref _DirtyRows[index]);
     public Boolean IsColumnDirty(Int32 index) => Volatile.Read(ref _DirtyColumns[index]);
     public void ClearRowDirty(Int32 index) => Volatile.Write(ref _DirtyRows[index], false);
@@ -43,9 +48,7 @@ namespace Griddler_Solver
     [JsonIgnore]
     public TimeSpan TimeTaken
     { get; set; }
-    [JsonIgnore]
-    public Int32 Iterations
-    { get; set; }
+
 
     public CellValue this[Int32 row, Int32 column]
     {
@@ -58,6 +61,7 @@ namespace Griddler_Solver
         if (_Board[row, column] != value)
         {
           _Board[row, column] = value;
+          Interlocked.Increment(ref _Version);
           if (_DirtyRows.Length > 0)
           {
             Volatile.Write(ref _DirtyRows[row], true);
@@ -107,20 +111,6 @@ namespace Griddler_Solver
     public void Clear()
     {
       Init();
-      foreach (Hint[] hints in HintsRow)
-      {
-        foreach (Hint hint in hints)
-        {
-          hint.IsSolved = false;
-        }
-      }
-      foreach (Hint[] hints in HintsColumn)
-      {
-        foreach (var hint in hints)
-        {
-          hint.IsSolved = false;
-        }
-      }
     }
     public void Init()
     {
@@ -169,6 +159,7 @@ namespace Griddler_Solver
           if (_Board[row, indexColumn] == CellValue.Unknown && column[row] != CellValue.Unknown)
           {
             _Board[row, indexColumn] = column[row];
+            Interlocked.Increment(ref _Version);
             Volatile.Write(ref _DirtyRows[row], true);
           }
         }
@@ -183,6 +174,7 @@ namespace Griddler_Solver
           if (_Board[indexRow, column] == CellValue.Unknown && row[column] != CellValue.Unknown)
           {
             _Board[indexRow, column] = row[column];
+            Interlocked.Increment(ref _Version);
             Volatile.Write(ref _DirtyColumns[column], true);
           }
         }

@@ -43,20 +43,12 @@
 
     <!-- Options panel -->
     <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Vertical" Margin="4 4 8 4">
-      <CheckBox x:Name="checkBoxScoreSorting" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxScoreSorting}">Score sorting</CheckBox>
-      <CheckBox x:Name="checkBoxPermutationAnalysis" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxPermutaionAnalysis}">Permutation Analysis</CheckBox>
+      <CheckBox x:Name="checkBoxLineSolving" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="True" IsEnabled="False">Line Solving</CheckBox>
       <CheckBox x:Name="checkBoxMultithread" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxMultithread}">Multithreads</CheckBox>
-      <CheckBox x:Name="checkBoxPermutationsLimit" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxPermutationsLimit}">Permutations limit</CheckBox>
-      <CheckBox x:Name="checkBoxStaticAnalysis" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxStaticAnalysis}">Static analysis</CheckBox>
-      <CheckBox x:Name="checkBoxOverlapAnalysis" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxOverlapAnalysis}">Overlap analysis</CheckBox>
-      <CheckBox x:Name="checkBoxBacktracking" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxBacktracking}">Backtracking</CheckBox>
       <Separator Margin="4 8 4 0"/>
-      <Button x:Name="buttonInvert" Margin="4 8 4 0" MinHeight="26" Click="OnButtonInvert_Click" Content="Invert options"/>
       <Button x:Name="buttonClearBoard" Margin="4 6 4 0" MinHeight="26" Click="OnButtonClearBoard_Click" Content="Clear board"/>
-      <Separator Margin="4 8 4 0"/>
       <Button x:Name="buttonSolve" Margin="4 8 4 0" MinHeight="26" Click="OnButtonSolve_Click" Content="Solve"/>
       <Separator Margin="4 8 4 0"/>
-      <CheckBox x:Name="checkBoxStepMode" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxStepMode}" Content="Step mode"/>
       <Label x:Name="labelCoordinates" Margin="0 8 0 0" Padding="4 0" VerticalAlignment="Center"/>
     </StackPanel>
   </Grid>

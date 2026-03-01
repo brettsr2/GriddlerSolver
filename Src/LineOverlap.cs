@@ -9,8 +9,6 @@ namespace Griddler_Solver
     {
       public CellValue?[] Deductions
       { get; set; } = Array.Empty<CellValue?>();
-      public Boolean[] HintSolved
-      { get; set; } = Array.Empty<Boolean>();
       public Boolean Changed
       { get; set; }
     }
@@ -39,12 +37,6 @@ namespace Griddler_Solver
         return new Result { Deductions = deductions, Changed = changed };
       }
 
-      // All hints already solved
-      if (hints.All(h => h.IsSolved))
-      {
-        return new Result { Changed = false };
-      }
-
       Int32[] leftStart = new Int32[hints.Length];
       if (!TryFitLeft(line, hints, 0, 0, leftStart))
       {
@@ -58,7 +50,6 @@ namespace Griddler_Solver
       }
 
       CellValue?[] result = new CellValue?[line.Length];
-      Boolean[] hintSolved = new Boolean[hints.Length];
       Boolean anyChanged = false;
 
       // Color overlap
@@ -160,7 +151,6 @@ namespace Griddler_Solver
       return new Result
       {
         Deductions = result,
-        HintSolved = hintSolved,
         Changed = anyChanged
       };
     }
@@ -430,71 +420,6 @@ namespace Griddler_Solver
       }
 
       return deductions;
-    }
-
-    /// <summary>
-    /// DP-based feasibility check: can all hints fit on the line?
-    /// O(N*K) guaranteed, no backtracking. Pre-allocated arrays avoid GC pressure.
-    /// </summary>
-    private static Boolean CanFit(CellValue[] line, Hint[] hints, Boolean[] dpPrev, Boolean[] dpCurr)
-    {
-      Int32 N = line.Length;
-      Int32 K = hints.Length;
-
-      if (K == 0)
-      {
-        for (Int32 j = 0; j < N; j++)
-        {
-          if (line[j] == CellValue.Color)
-          {
-            return false;
-          }
-        }
-        return true;
-      }
-
-      // Base: dpPrev[j] = dp[0][j] = no Color cell in cells 0..j-1
-      dpPrev[0] = true;
-      for (Int32 j = 1; j <= N; j++)
-      {
-        dpPrev[j] = dpPrev[j - 1] && line[j - 1] != CellValue.Color;
-      }
-
-      for (Int32 i = 0; i < K; i++)
-      {
-        Int32 c = hints[i].Count;
-        Array.Clear(dpCurr, 0, N + 1);
-
-        Int32 nbr = 0; // non-Background run length
-        for (Int32 j = 1; j <= N; j++)
-        {
-          nbr = line[j - 1] != CellValue.Background ? nbr + 1 : 0;
-
-          // Option A: cell j-1 is background (gap)
-          if (dpCurr[j - 1] && line[j - 1] != CellValue.Color)
-          {
-            dpCurr[j] = true;
-          }
-
-          // Option B: hint i placed at cells (j-c)...(j-1)
-          if (!dpCurr[j] && j >= c && nbr >= c)
-          {
-            Int32 start = j - c;
-            if (start == 0)
-            {
-              dpCurr[j] = dpPrev[0];
-            }
-            else if (line[start - 1] != CellValue.Color)
-            {
-              dpCurr[j] = dpPrev[start - 1];
-            }
-          }
-        }
-
-        (dpPrev, dpCurr) = (dpCurr, dpPrev);
-      }
-
-      return dpPrev[N];
     }
 
     internal static Boolean TryFitLeft(CellValue[] line, Hint[] hints, Int32 hintIdx, Int32 startPos, Int32[] result)

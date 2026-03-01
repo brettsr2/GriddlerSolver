@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Griddler_Solver
 {
@@ -11,32 +11,7 @@ namespace Griddler_Solver
     public IProgress? Progress
     { get; set; }
 
-    public Boolean ScoreSortingEnabled
-    { get; set; }
-    public Boolean PermutationAnalysisEnabled
-    { get; set; }
     public Boolean MultithreadEnabled
     { get; set; }
-    public Boolean PermutationsLimit
-    { get; set; }
-    public Boolean StaticAnalysisEnabled
-    { get; set; }
-    public Boolean OverlapAnalysisEnabled
-    { get; set; }
-    public Boolean BacktrackingEnabled
-    { get; set; }
-
-    public Boolean StepMode
-    { get; set; }
-
-    public Int64 TicksCurrentIterationStart;
-    public Int64 TicksCurrentIterationTimer;
-    public Int64 TicksStart
-    { get; set; } = DateTime.Now.Ticks;
-    public Int32 IterationPrefixLength
-    { get; set; }
-
-    public Int32 ActiveWorkers;
-    public volatile Boolean ContradictionDetected;
   }
 }

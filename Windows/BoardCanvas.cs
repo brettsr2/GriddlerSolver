@@ -27,8 +27,6 @@ namespace Griddler_Solver
       InvalidateVisual();
     }
 
-    public void Refresh() => InvalidateVisual();
-
     protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
     {
       base.OnRenderSizeChanged(sizeInfo);
@@ -73,12 +71,6 @@ namespace Griddler_Solver
         dc.DrawText(ft, new Point(centerX - ft.Width / 2, centerY - ft.Height / 2));
       }
 
-      void DrawCross(Double left, Double top)
-      {
-        dc.DrawLine(_penGrey, new Point(left, top), new Point(left + cellSize, top + cellSize));
-        dc.DrawLine(_penGrey, new Point(left + cellSize, top), new Point(left, top + cellSize));
-      }
-
       // 1. Column hints
       Double cx = originX;
       for (Int32 col = 0; col < board.ColumnCount; col++)
@@ -89,10 +81,6 @@ namespace Griddler_Solver
         {
           DrawCell(cx, cy, _solver.ListColors[hint.ColorId].ColorBrush);
           DrawHintText(cx + cellSize / 2, cy + cellSize / 2, hint.Count.ToString(), _solver.ListColors[1].ColorBrush);
-          if (hint.IsSolved)
-          {
-            DrawCross(cx, cy);
-          }
           cy += cellSize;
         }
         cx += cellSize;
@@ -108,10 +96,6 @@ namespace Griddler_Solver
         {
           DrawCell(rx, ry, _solver.ListColors[hint.ColorId].ColorBrush);
           DrawHintText(rx + cellSize / 2, ry + cellSize / 2, hint.Count.ToString(), _solver.ListColors[1].ColorBrush);
-          if (hint.IsSolved)
-          {
-            DrawCross(rx, ry);
-          }
           rx += cellSize;
         }
         ry += cellSize;
@@ -142,24 +126,6 @@ namespace Griddler_Solver
         Pen pen = col % 5 == 0 ? _penBlack : _penGrey;
         dc.DrawLine(pen, new Point(x, originY), new Point(x, originY + board.RowCount * cellSize));
       }
-
-      // 5. Static analysis markers
-      /*StaticAnalysis[] listSA;
-      try
-      {
-        listSA = _solver.ListStaticAnalysis.ToArray();
-      }
-      catch
-      {
-        listSA = [];
-      }
-
-      foreach (StaticAnalysis sa in listSA)
-      {
-        Double x = originX + sa.Column * cellSize;
-        Double y = originY + sa.Row * cellSize;
-        DrawCross(x, y);
-      }*/
     }
   }
 }
