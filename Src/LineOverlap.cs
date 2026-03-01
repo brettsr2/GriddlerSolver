@@ -138,7 +138,9 @@ namespace Griddler_Solver
       for (Int32 j = 0; j < probeLine.Length; j++)
       {
         if (result[j] is CellValue val)
+        {
           probeLine[j] = val;
+        }
       }
 
       Boolean[] dpPrev = new Boolean[probeLine.Length + 1];
@@ -149,7 +151,10 @@ namespace Griddler_Solver
         probeFound = false;
         for (Int32 j = 0; j < probeLine.Length; j++)
         {
-          if (probeLine[j] != CellValue.Unknown) continue;
+          if (probeLine[j] != CellValue.Unknown)
+          {
+            continue;
+          }
 
           // Test Color
           probeLine[j] = CellValue.Color;
@@ -162,7 +167,9 @@ namespace Griddler_Solver
           probeLine[j] = CellValue.Unknown;
 
           if (!colorOk && !bgOk)
+          {
             return null; // Contradiction
+          }
 
           if (colorOk && !bgOk)
           {
@@ -201,14 +208,21 @@ namespace Griddler_Solver
       if (K == 0)
       {
         for (Int32 j = 0; j < N; j++)
-          if (line[j] == CellValue.Color) return false;
+        {
+          if (line[j] == CellValue.Color)
+          {
+            return false;
+          }
+        }
         return true;
       }
 
       // Base: dpPrev[j] = dp[0][j] = no Color cell in cells 0..j-1
       dpPrev[0] = true;
       for (Int32 j = 1; j <= N; j++)
+      {
         dpPrev[j] = dpPrev[j - 1] && line[j - 1] != CellValue.Color;
+      }
 
       for (Int32 i = 0; i < K; i++)
       {
@@ -222,16 +236,22 @@ namespace Griddler_Solver
 
           // Option A: cell j-1 is background (gap)
           if (dpCurr[j - 1] && line[j - 1] != CellValue.Color)
+          {
             dpCurr[j] = true;
+          }
 
           // Option B: hint i placed at cells (j-c)...(j-1)
           if (!dpCurr[j] && j >= c && nbr >= c)
           {
             Int32 start = j - c;
             if (start == 0)
+            {
               dpCurr[j] = dpPrev[0];
+            }
             else if (line[start - 1] != CellValue.Color)
+            {
               dpCurr[j] = dpPrev[start - 1];
+            }
           }
         }
 

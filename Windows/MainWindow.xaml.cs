@@ -99,7 +99,6 @@ namespace Griddler_Solver
       Config config = new Config()
       {
         Name = Name,
-        Draw = checkBoxDraw.IsChecked == true,
         Progress = this,
         ScoreSortingEnabled = checkBoxScoreSorting.IsChecked == true,
         PermutationAnalysisEnabled = checkBoxPermutationAnalysis.IsChecked == true,
@@ -272,10 +271,7 @@ namespace Griddler_Solver
           _ProgressWindow.textBoxOutput.AppendText(message + Environment.NewLine);
           _ProgressWindow.textBoxOutput.ScrollToEnd();
 
-          if (_Solver.Config.Draw)
-          {
-            Draw();
-          }
+          Draw();
         }
       }));
     }

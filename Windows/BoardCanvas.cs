@@ -38,7 +38,9 @@ namespace Griddler_Solver
     protected override void OnRender(DrawingContext dc)
     {
       if (_solver == null || _solver.Board.RowCount == 0 || _solver.Board.ColumnCount == 0)
+      {
         return;
+      }
 
       var board = _solver.Board;
       Double cellSize = Math.Min(
@@ -88,7 +90,9 @@ namespace Griddler_Solver
           DrawCell(cx, cy, _solver.ListColors[hint.ColorId].ColorBrush);
           DrawHintText(cx + cellSize / 2, cy + cellSize / 2, hint.Count.ToString(), _solver.ListColors[1].ColorBrush);
           if (hint.IsSolved)
+          {
             DrawCross(cx, cy);
+          }
           cy += cellSize;
         }
         cx += cellSize;
@@ -105,7 +109,9 @@ namespace Griddler_Solver
           DrawCell(rx, ry, _solver.ListColors[hint.ColorId].ColorBrush);
           DrawHintText(rx + cellSize / 2, ry + cellSize / 2, hint.Count.ToString(), _solver.ListColors[1].ColorBrush);
           if (hint.IsSolved)
+          {
             DrawCross(rx, ry);
+          }
           rx += cellSize;
         }
         ry += cellSize;
@@ -138,12 +144,22 @@ namespace Griddler_Solver
       }
 
       // 5. Static analysis markers
-      foreach (StaticAnalysis sa in _solver.ListStaticAnalysis)
+      /*StaticAnalysis[] listSA;
+      try
+      {
+        listSA = _solver.ListStaticAnalysis.ToArray();
+      }
+      catch
+      {
+        listSA = [];
+      }
+
+      foreach (StaticAnalysis sa in listSA)
       {
         Double x = originX + sa.Column * cellSize;
         Double y = originY + sa.Row * cellSize;
         DrawCross(x, y);
-      }
+      }*/
     }
   }
 }

@@ -39,9 +39,13 @@ namespace Griddler_Solver
         ulong b = i < 64 ? Bg0 : Bg1;
 
         if ((c & bit) != 0)
+        {
           line[i] = CellValue.Color;
+        }
         else if ((b & bit) != 0)
+        {
           line[i] = CellValue.Background;
+        }
       }
       return line;
     }
@@ -51,7 +55,9 @@ namespace Griddler_Solver
       MaskRange(start, count, out ulong m0, out ulong m1);
 
       if (((Bg0 & m0) | (Bg1 & m1)) != 0)
+      {
         return false;
+      }
 
       Color0 |= m0;
       Color1 |= m1;
@@ -113,7 +119,10 @@ namespace Griddler_Solver
     private static ulong WordMask(Int32 lo, Int32 hi)
     {
       Int32 count = hi - lo;
-      if (count >= 64) return ulong.MaxValue;
+      if (count >= 64)
+      {
+        return ulong.MaxValue;
+      }
       return ((1UL << count) - 1) << lo;
     }
 
@@ -123,9 +132,13 @@ namespace Griddler_Solver
       Int32 end = start + count;
 
       if (start < 64 && end > 0)
+      {
         m0 = WordMask(Math.Max(start, 0), Math.Min(end, 64));
+      }
       if (start < 128 && end > 64)
+      {
         m1 = WordMask(Math.Max(start - 64, 0), Math.Min(end - 64, 64));
+      }
     }
   }
 }

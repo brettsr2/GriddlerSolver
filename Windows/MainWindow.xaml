@@ -11,7 +11,6 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
-      <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="*" />
@@ -52,15 +51,13 @@
       <CheckBox x:Name="checkBoxOverlapAnalysis" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxOverlapAnalysis}">Overlap analysis</CheckBox>
       <CheckBox x:Name="checkBoxBacktracking" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxBacktracking}">Backtracking</CheckBox>
       <Separator Margin="4 8 4 0"/>
-      <Button x:Name="buttonInvert" Margin="4 8 4 0" Click="OnButtonInvert_Click" Content="Invert options"/>
-      <Button x:Name="buttonClearBoard" Margin="4 6 4 0" Click="OnButtonClearBoard_Click" Content="Clear board"/>
+      <Button x:Name="buttonInvert" Margin="4 8 4 0" MinHeight="26" Click="OnButtonInvert_Click" Content="Invert options"/>
+      <Button x:Name="buttonClearBoard" Margin="4 6 4 0" MinHeight="26" Click="OnButtonClearBoard_Click" Content="Clear board"/>
       <Separator Margin="4 8 4 0"/>
-      <CheckBox x:Name="checkBoxDraw" Margin="4 8 4 0" VerticalAlignment="Center" IsChecked="False">Draw</CheckBox>
+      <Button x:Name="buttonSolve" Margin="4 8 4 0" MinHeight="26" Click="OnButtonSolve_Click" Content="Solve"/>
+      <Separator Margin="4 8 4 0"/>
       <CheckBox x:Name="checkBoxStepMode" Margin="4 6 4 0" VerticalAlignment="Center" IsChecked="{Binding CheckBoxStepMode}" Content="Step mode"/>
       <Label x:Name="labelCoordinates" Margin="0 8 0 0" Padding="4 0" VerticalAlignment="Center"/>
     </StackPanel>
-
-    <!-- Solve button -->
-    <Button Grid.Row="3" Grid.ColumnSpan="2" x:Name="buttonSolve" MinHeight="32" Margin="4" Content="Solve" Click="OnButtonSolve_Click"/>
   </Grid>
 </Window>

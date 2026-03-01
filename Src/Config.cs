@@ -8,8 +8,6 @@ namespace Griddler_Solver
     { get; set; } = String.Empty;
     public volatile Boolean Break;
 
-    public Boolean Draw
-    { get; set; }
     public IProgress? Progress
     { get; set; }
 
