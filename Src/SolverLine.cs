@@ -315,7 +315,9 @@ namespace Griddler_Solver
       // 1. Find segments (groups of non-Background cells separated by Background)
       var segments = FindSegments(line);
       if (segments.Count <= 1)
+      {
         return false; // 0-1 segments = no benefit
+      }
 
       // 2. Get hint ranges via TryFitLeft/TryFitRight on the FULL line
       Int32[] leftStart = new Int32[hints.Length];
@@ -340,7 +342,9 @@ namespace Griddler_Solver
 
         Int32 seg = FindSegmentContaining(segments, rangeStart, rangeEnd);
         if (seg < 0)
+        {
           return false; // hint spans multiple segments → fallback to full PA
+        }
         hintSegment[i] = seg;
       }
 
@@ -359,7 +363,9 @@ namespace Griddler_Solver
         for (Int32 i = 0; i < hints.Length; i++)
         {
           if (hintSegment[i] == seg)
+          {
             subHintsList.Add(hints[i]);
+          }
         }
         Hint[] subHints = subHintsList.ToArray();
 
@@ -384,7 +390,9 @@ namespace Griddler_Solver
         GeneratePermutations(subLine, subHints);
 
         if (Config.Break || Config.ContradictionDetected)
+        {
           return true;
+        }
 
         // 0 permutations → contradiction
         if (!_HasMergedLine && _PermutationCount == 0)
@@ -433,11 +441,15 @@ namespace Griddler_Solver
         else
         {
           if (segStart < 0)
+          {
             segStart = i;
+          }
         }
       }
       if (segStart >= 0)
+      {
         segments.Add((segStart, line.Length - 1));
+      }
       return segments;
     }
 
@@ -451,7 +463,9 @@ namespace Griddler_Solver
       for (Int32 i = 0; i < segments.Count; i++)
       {
         if (rangeStart >= segments[i].Start && rangeEnd <= segments[i].End)
+        {
           return i;
+        }
       }
       return -1;
     }

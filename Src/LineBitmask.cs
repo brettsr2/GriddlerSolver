@@ -17,13 +17,25 @@ namespace Griddler_Solver
         ulong bit = 1UL << (i & 63);
         if (i < 64)
         {
-          if (line[i] == CellValue.Color) bm.Color0 |= bit;
-          else if (line[i] == CellValue.Background) bm.Bg0 |= bit;
+          if (line[i] == CellValue.Color)
+          {
+            bm.Color0 |= bit;
+          }
+          else if (line[i] == CellValue.Background)
+          {
+            bm.Bg0 |= bit;
+          }
         }
         else
         {
-          if (line[i] == CellValue.Color) bm.Color1 |= bit;
-          else if (line[i] == CellValue.Background) bm.Bg1 |= bit;
+          if (line[i] == CellValue.Color)
+          {
+            bm.Color1 |= bit;
+          }
+          else if (line[i] == CellValue.Background)
+          {
+            bm.Bg1 |= bit;
+          }
         }
       }
       return bm;
