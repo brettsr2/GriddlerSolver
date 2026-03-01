@@ -1,17 +1,14 @@
-﻿using System;
+﻿using Griddler_Solver.Windows;
+using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
-using Griddler_Solver.Windows;
-
-using Microsoft.Win32;
 
 namespace Griddler_Solver
 {
@@ -66,6 +63,11 @@ namespace Griddler_Solver
       comboBoxUrl.Items.Add("Boat [50x50x2] ~21M | https://www.griddlers.net/nonogram/-/g/116627");
       comboBoxUrl.Items.Add("George W. Bush [88x99x2] ~42.5M | https://www.griddlers.net/nonogram/-/g/193462");
       comboBoxUrl.Items.Add("Snow Tiger [100x100x2] ~90M | https://www.griddlers.net/nonogram/-/g/166197");
+      comboBoxUrl.Items.Add("RTM's Tigers [100x100x2] ~215M | https://www.griddlers.net/nonogram/-/g/293872");
+      comboBoxUrl.Items.Add("King Under the Mountain [100x100x2] ~428M | https://www.griddlers.net/nonogram/-/g/278786");
+      comboBoxUrl.Items.Add("Fierce Indian Chief ~617M | https://www.griddlers.net/nonogram/-/g/290035");
+      comboBoxUrl.Items.Add("Angry Indian Chief [100x100x2] ~820M | https://www.griddlers.net/nonogram/-/g/290304");
+      comboBoxUrl.Items.Add("Deadly Indian Chief [100x100x2] ~1G | https://www.griddlers.net/nonogram/-/g/290307");
     }
     private void Draw()
     {
@@ -94,7 +96,7 @@ namespace Griddler_Solver
       }
 #endif
 
-      Config config  = new Config()
+      Config config = new Config()
       {
         Name = Name,
         Draw = checkBoxDraw.IsChecked == true,
@@ -120,7 +122,7 @@ namespace Griddler_Solver
       Rect rect = VisualTreeHelper.GetDescendantBounds(this);
       _ProgressWindow.Left = Left + rect.Width;
       _ProgressWindow.Top = Top;
-      
+
       _ProgressWindow.Show();
 
       Task.Run(() =>
@@ -139,7 +141,7 @@ namespace Griddler_Solver
       String http = httpClient.GetStringAsync(url).Result;
 
       String title = "<meta property=\"og:title\" content=\"";
-      
+
       Int32 posBeg = http.IndexOf(title) + title.Length;
       Int32 posEnd = http.IndexOf("\"", posBeg);
       String name = http.Substring(posBeg, posEnd - posBeg);
@@ -188,7 +190,7 @@ namespace Griddler_Solver
       }
 
       var hintsRow = ParseJsonInput(jsonPuzzle.leftHeader);
-      var hintsColumn= ParseJsonInput(jsonPuzzle.topHeader);
+      var hintsColumn = ParseJsonInput(jsonPuzzle.topHeader);
       _Solver = new Solver(hintsRow, hintsColumn)
       {
         Name = name,
