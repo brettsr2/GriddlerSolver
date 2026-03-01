@@ -96,6 +96,8 @@ namespace Griddler_Solver
     private Boolean _HasMergedLine = false;
     private UInt64 _PermutationCount = 0;
     private Boolean _EarlyTerminated = false;
+    private CellValue[] _OriginLine = Array.Empty<CellValue>();
+    private Int32[] _FitCheckResult = Array.Empty<Int32>();
 
     public void Solve()
     {
@@ -175,6 +177,8 @@ namespace Griddler_Solver
       }
 
       _EarlyTerminated = false;
+      _OriginLine = lineOrigin;
+      _FitCheckResult = new Int32[hints.Length];
 
       Int32 maxHintCellCount = hints.Sum(hint => hint.Count);
       Int32 remainingHintCells = maxHintCellCount;
@@ -288,6 +292,15 @@ namespace Griddler_Solver
         var clone = line;
         if (clone.FillRange(index, hint.Count, maxHintCellCount))
         {
+          // Constraint propagation: verify remaining hints can fit on origin line
+          if (hintIndex + 1 < hints.Length)
+          {
+            if (!LineOverlap.TryFitLeft(_OriginLine, hints, hintIndex + 1, afterHint + 1, _FitCheckResult))
+            {
+              continue;
+            }
+          }
+
           GeneratePermutations(lineOrigin, clone, afterHint + 1, hints, hintIndex + 1, remainingAfter, maxHintCellCount);
           if (_EarlyTerminated)
           {

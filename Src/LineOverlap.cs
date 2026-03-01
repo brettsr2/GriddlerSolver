@@ -132,12 +132,113 @@ namespace Griddler_Solver
         }
       }
 
+      // Cell probing: for each Unknown cell, test if setting it to Color or Background
+      // leads to infeasibility via TryFitLeft/TryFitRight. O(n²k) — very fast.
+      CellValue[] probeLine = (CellValue[])line.Clone();
+      for (Int32 j = 0; j < probeLine.Length; j++)
+      {
+        if (result[j] is CellValue val)
+          probeLine[j] = val;
+      }
+
+      Boolean[] dpPrev = new Boolean[probeLine.Length + 1];
+      Boolean[] dpCurr = new Boolean[probeLine.Length + 1];
+      Boolean probeFound = true;
+      while (probeFound)
+      {
+        probeFound = false;
+        for (Int32 j = 0; j < probeLine.Length; j++)
+        {
+          if (probeLine[j] != CellValue.Unknown) continue;
+
+          // Test Color
+          probeLine[j] = CellValue.Color;
+          Boolean colorOk = CanFit(probeLine, hints, dpPrev, dpCurr);
+          probeLine[j] = CellValue.Unknown;
+
+          // Test Background
+          probeLine[j] = CellValue.Background;
+          Boolean bgOk = CanFit(probeLine, hints, dpPrev, dpCurr);
+          probeLine[j] = CellValue.Unknown;
+
+          if (!colorOk && !bgOk)
+            return null; // Contradiction
+
+          if (colorOk && !bgOk)
+          {
+            result[j] = CellValue.Color;
+            probeLine[j] = CellValue.Color;
+            anyChanged = true;
+            probeFound = true;
+          }
+          else if (!colorOk && bgOk)
+          {
+            result[j] = CellValue.Background;
+            probeLine[j] = CellValue.Background;
+            anyChanged = true;
+            probeFound = true;
+          }
+        }
+      }
+
       return new Result
       {
         Deductions = result,
         HintSolved = hintSolved,
         Changed = anyChanged
       };
+    }
+
+    /// <summary>
+    /// DP-based feasibility check: can all hints fit on the line?
+    /// O(N*K) guaranteed, no backtracking. Pre-allocated arrays avoid GC pressure.
+    /// </summary>
+    private static Boolean CanFit(CellValue[] line, Hint[] hints, Boolean[] dpPrev, Boolean[] dpCurr)
+    {
+      Int32 N = line.Length;
+      Int32 K = hints.Length;
+
+      if (K == 0)
+      {
+        for (Int32 j = 0; j < N; j++)
+          if (line[j] == CellValue.Color) return false;
+        return true;
+      }
+
+      // Base: dpPrev[j] = dp[0][j] = no Color cell in cells 0..j-1
+      dpPrev[0] = true;
+      for (Int32 j = 1; j <= N; j++)
+        dpPrev[j] = dpPrev[j - 1] && line[j - 1] != CellValue.Color;
+
+      for (Int32 i = 0; i < K; i++)
+      {
+        Int32 c = hints[i].Count;
+        Array.Clear(dpCurr, 0, N + 1);
+
+        Int32 nbr = 0; // non-Background run length
+        for (Int32 j = 1; j <= N; j++)
+        {
+          nbr = line[j - 1] != CellValue.Background ? nbr + 1 : 0;
+
+          // Option A: cell j-1 is background (gap)
+          if (dpCurr[j - 1] && line[j - 1] != CellValue.Color)
+            dpCurr[j] = true;
+
+          // Option B: hint i placed at cells (j-c)...(j-1)
+          if (!dpCurr[j] && j >= c && nbr >= c)
+          {
+            Int32 start = j - c;
+            if (start == 0)
+              dpCurr[j] = dpPrev[0];
+            else if (line[start - 1] != CellValue.Color)
+              dpCurr[j] = dpPrev[start - 1];
+          }
+        }
+
+        (dpPrev, dpCurr) = (dpCurr, dpPrev);
+      }
+
+      return dpPrev[N];
     }
 
     internal static Boolean TryFitLeft(CellValue[] line, Hint[] hints, Int32 hintIdx, Int32 startPos, Int32[] result)
