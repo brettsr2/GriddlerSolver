@@ -95,6 +95,7 @@ namespace Griddler_Solver
     private LineBitmask _MergedLine;
     private Boolean _HasMergedLine = false;
     private UInt64 _PermutationCount = 0;
+    private Boolean _EarlyTerminated = false;
 
     public void Solve()
     {
@@ -167,6 +168,8 @@ namespace Griddler_Solver
         return;
       }
 
+      _EarlyTerminated = false;
+
       Int32 maxHintCellCount = hints.Sum(hint => hint.Count);
       Int32 remainingHintCells = maxHintCellCount;
 
@@ -190,10 +193,11 @@ namespace Griddler_Solver
       GeneratePermutations(bmOrigin, bmLine, beginIndex, hints, 0, remainingHintCells, maxHintCellCount);
 
       // Fallback: if the optimized pass found 0 permutations, retry without optimization
-      if (_PermutationCount == 0 && optimized && !Config.Break && !Config.ContradictionDetected)
+      if (_PermutationCount == 0 && optimized && !Config.Break && !Config.ContradictionDetected && !_EarlyTerminated)
       {
         _HasMergedLine = false;
         _PermutationCount = 0;
+        _EarlyTerminated = false;
 
         remainingHintCells = maxHintCellCount;
         bmLine = bmOrigin;
@@ -202,7 +206,7 @@ namespace Griddler_Solver
     }
     private void GeneratePermutations(LineBitmask lineOrigin, LineBitmask line, Int32 startIndex, Hint[] hints, Int32 hintIndex, Int32 remainingHintCells, Int32 maxHintCellCount)
     {
-      if (Config.Break || Config.ContradictionDetected)
+      if (Config.Break || Config.ContradictionDetected || _EarlyTerminated)
       {
         return;
       }
@@ -237,6 +241,16 @@ namespace Griddler_Solver
           else
           {
             _MergedLine.MergeWith(line);
+
+            // Early termination: check at powers of 2 (8, 16, 32, ...) — logarithmic overhead
+            if (_PermutationCount >= 8 && (_PermutationCount & (_PermutationCount - 1)) == 0)
+            {
+              if (!_MergedLine.HasNewDeductions(lineOrigin))
+              {
+                _EarlyTerminated = true;
+                return;
+              }
+            }
           }
         }
 
@@ -269,6 +283,10 @@ namespace Griddler_Solver
         if (clone.FillRange(index, hint.Count, maxHintCellCount))
         {
           GeneratePermutations(lineOrigin, clone, afterHint + 1, hints, hintIndex + 1, remainingAfter, maxHintCellCount);
+          if (_EarlyTerminated)
+          {
+            return;
+          }
         }
       }
     }

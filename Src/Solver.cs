@@ -292,7 +292,8 @@ namespace Griddler_Solver
         {
           if (permutationsMinLimit < UInt64.MaxValue)
           {
-            permutationsLimit = permutationsMinLimit + 1;
+            // Exponential escalation: at least double the limit each time
+            permutationsLimit = Math.Max(permutationsMinLimit + 1, permutationsLimit * 2);
           }
           else
           {
