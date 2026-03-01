@@ -77,6 +77,41 @@ namespace Griddler_Solver
         }
       }
 
+      // Pinned hints: hint at exactly one position → write all its cells + separators
+      for (Int32 i = 0; i < hints.Length; i++)
+      {
+        if (leftStart[i] == rightStart[i])
+        {
+          Int32 pos = leftStart[i];
+          Int32 count = hints[i].Count;
+
+          // All hint cells → Color
+          for (Int32 j = pos; j < pos + count; j++)
+          {
+            if (line[j] == CellValue.Unknown)
+            {
+              result[j] = CellValue.Color;
+              anyChanged = true;
+            }
+          }
+
+          // Separator before hint → Background
+          if (pos > 0 && line[pos - 1] == CellValue.Unknown)
+          {
+            result[pos - 1] = CellValue.Background;
+            anyChanged = true;
+          }
+
+          // Separator after hint → Background
+          Int32 afterHint = pos + count;
+          if (afterHint < line.Length && line[afterHint] == CellValue.Unknown)
+          {
+            result[afterHint] = CellValue.Background;
+            anyChanged = true;
+          }
+        }
+      }
+
       // Unreachable cells: not in any hint's possible range → Background
       Boolean[] reachable = new Boolean[line.Length];
       for (Int32 i = 0; i < hints.Length; i++)
