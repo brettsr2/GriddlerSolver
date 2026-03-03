@@ -7,10 +7,10 @@ Stahuje a automaticky lusti puzzly z [griddlers.net](https://www.griddlers.net).
 
 ## Architektura solveru
 
-Solver spusti `ProcessWorkQueue` — reaktivni multi-thread fixni-bod algoritmus.
-Vsechny radky/sloupce zacnou jako dirty. Workery je zpracovavaji pomoci
-`LineOverlap.Solve` (Forward+Backward DP), propaguji zmeny pres dirty flags
-na krizove linie a opakuji, dokud se fronta nevyprazdni.
+Solver spusti `ProcessWorkQueue` — reaktivni single-thread fixni-bod algoritmus.
+Vsechny radky/sloupce zacnou jako dirty. Jsou zpracovavany pomoci
+`LineOverlap.Solve` (Forward+Backward DP), zmeny se propagují pres dirty flags
+na krizove linie a opakuji se, dokud se fronta nevyprazdni.
 
 ```
   Solver.Solve()
@@ -18,23 +18,19 @@ na krizove linie a opakuji, dokud se fronta nevyprazdni.
      v
   ProcessWorkQueue
      |
-     +---> N worker threadu (= pocet CPU jader)
-     |        |
-     |        +---> Dequeue dirty radek/sloupec
-     |        |
-     |        +---> SolverLine.Solve
-     |        |        |
-     |        |        +---> LineOverlap.Solve (Forward+Backward DP)
-     |        |
-     |        +---> Board.MergeRow/Column
-     |        |        |
-     |        |        +---> dirty flags na krizovych liniich
-     |        |        |
-     |        |        +---> re-enqueue dirty linii
-     |        |
-     |        +---> opakuj dokud fronta neni prazdna
+     +---> Dequeue dirty radek/sloupec
      |
-     +---> drainComplete → workersExited → navrat
+     +---> SolverLine.Solve
+     |        |
+     |        +---> LineOverlap.Solve (Forward+Backward DP)
+     |
+     +---> Board.MergeRow/Column
+     |        |
+     |        +---> dirty flags na krizovych liniich
+     |        |
+     |        +---> re-enqueue dirty linii
+     |
+     +---> opakuj dokud fronta neni prazdna
      |
      v
   Board.IsSolved?  ano → hotovo  /  ne → "Solver stuck."
@@ -147,71 +143,43 @@ Vysledek:  [?][#][#][?][?][?][#][?]
 
 ---
 
-## ProcessWorkQueue — reaktivni multi-thread
-
-Paralelni zpracovani radku/sloupcu s reaktivni propagaci zmen.
+## ProcessWorkQueue — reaktivni single-thread
 
 ```
 +------------------------------------------------------------------+
 |                      ProcessWorkQueue                             |
 |                                                                   |
 |  1. Naplneni fronty:                                             |
-|     vsechny dirty + unsolved radky/sloupce → ConcurrentQueue     |
+|     vsechny dirty + unsolved radky/sloupce → Queue               |
 |                                                                   |
-|  2. Worker thready (N = pocet CPU jader):                        |
-|                                                                   |
-|     +----------+  +----------+  +----------+                     |
-|     | Worker 1 |  | Worker 2 |  | Worker N |                     |
-|     +----+-----+  +----+-----+  +----+-----+                     |
-|          |              |              |                          |
-|          v              v              v                          |
-|     +---------+    +---------+    +---------+                    |
-|     | Dequeue |    | Dequeue |    | Dequeue |                    |
-|     +---------+    +---------+    +---------+                    |
-|          |              |              |                          |
-|          v              v              v                          |
-|     +---------+    +---------+    +---------+                    |
-|     |  Solve  |    |  Solve  |    |  Solve  |   LineOverlap.Solve|
-|     +---------+    +---------+    +---------+                    |
-|          |              |              |                          |
-|          v              v              v                          |
-|     +---------+    +---------+    +---------+                    |
-|     |  Merge  |    |  Merge  |    |  Merge  |   Board.MergeRow/  |
-|     +---------+    +---------+    +---------+   MergeColumn      |
-|          |              |              |                          |
-|          v              v              v                          |
-|     Merge oznaci krizove radky/sloupce jako dirty                |
+|  2. Smycka:                                                       |
+|     Dequeue dirty radek/sloupec                                   |
+|          |                                                        |
+|          v                                                        |
+|     SolverLine.Solve → LineOverlap.Solve (DP)                    |
+|          |                                                        |
+|          v                                                        |
+|     Board.MergeRow/Column                                         |
+|          |                                                        |
+|          v                                                        |
+|     Oznaci krizove radky/sloupce jako dirty                      |
 |     → dirty krizove linie se znovu enqueue                       |
 |                                                                   |
-|  3. Fronta se vyprezdni → drainComplete.Set()                    |
-|     Vsechny workery skonci → workersExited.Signal()              |
+|  3. Fronta prazdna → navrat                                      |
 +------------------------------------------------------------------+
 ```
 
 ### Dirty propagace
 
-Kdyz worker vyresi radek 5 a zmeni bunku `[5, 10]`:
+Kdyz solver vyresi radek 5 a zmeni bunku `[5, 10]`:
 - `Board.MergeRow` zapise zmenu a oznaci **sloupec 10** jako dirty
-- Worker re-enqueue sloupec 10 do fronty
-- Jiny worker vyresi sloupec 10, zmeni bunku `[3, 10]`
+- Sloupec 10 se re-enqueue do fronty
+- Solver vyresi sloupec 10, zmeni bunku `[3, 10]`
 - `Board.MergeColumn` oznaci **radek 3** jako dirty
 - Radek 3 se re-enqueue...
 
 Tento retezovy efekt propaguje informaci pres celou desku,
 dokud se fronta nevyprazdni (zadne dalsi zmeny).
-
-### Synchronizace
-
-| Mechanismus | Ucel |
-|---|---|
-| `ConcurrentQueue<SolverLine>` | Thread-safe fronta prace |
-| `ConcurrentDictionary<LineKey, byte>` | Prevence duplicitniho enqueue |
-| `Interlocked.Increment/Decrement` | Atomicke pocitadlo pending items |
-| `ManualResetEventSlim` | Signal ze fronta je prazdna |
-| `CountdownEvent` | Signal ze vsechny workery skoncily |
-| `Board._Lock` | Mutex pro GetRow/MergeRow operace |
-| `Volatile.Read/Write` | Dirty flags viditelne vsem threadum |
-| `Config.Break` (volatile) | Cancel signal — kontrolovan ve vsech smyckach |
 
 ---
 
@@ -245,18 +213,13 @@ Board udrzuje pole `_DirtyRows[]` a `_DirtyColumns[]`. Kdyz se zmeni bunka,
 oznaci se **jen** prislusny radek a sloupec. ProcessWorkQueue zpracuje
 **jen dirty linie**, coz dramaticky snizuje praci.
 
-### 4. Version counter — O(1) detekce zaseku
-
-`Int32 _Version` counter se atomicky inkrementuje pri kazde zmene bunky.
-Pokud se po ProcessWorkQueue Board.IsSolved == false, solver hlasi "stuck".
-
-### 5. Rendering: jeden OnRender pass
+### 4. Rendering: jeden OnRender pass
 
 `BoardCanvas` dedi z `FrameworkElement` a prepisuje `OnRender(DrawingContext)`.
 Kresli **vsechny bunky, hinty a cary v jedinem pruchodu** pomoci
 `dc.DrawRectangle`, `dc.DrawLine`, `dc.DrawText`.
 
-### 6. Frozen Pen objekty
+### 5. Frozen Pen objekty
 
 Pera pro kresleni mrize (`_penGrey`, `_penBlack`) jsou vytvorena
 v konstruktoru a zmrazena (`Freeze()`). Frozen objekty WPF nevyzaduji
@@ -273,8 +236,7 @@ GriddlerSolver/
 |   +-- Solver.cs            Orchestrace solveru, ProcessWorkQueue
 |   +-- SolverLine.cs        Obalka pro reseni jednoho radku/sloupce
 |   +-- LineOverlap.cs       DP solver (TryFit, Forward+Backward DP)
-|   +-- Board.cs             Stav desky, dirty tracking, version counter
-|   +-- Config.cs            Konfigurace (Break, threading)
+|   +-- Board.cs             Stav desky, dirty tracking
 |   +-- Hint.cs              Datova trida pro hint (ColorId, Count)
 |   +-- Enums.cs             CellValue enum
 |   +-- PuzzleColors.cs      Paleta barev s lazy SolidColorBrush
@@ -282,12 +244,8 @@ GriddlerSolver/
 |   +-- Json.cs              Parser JSON z griddlers.net
 |
 +-- Windows/
-|   +-- MainWindow.xaml/.cs   Hlavni okno, Solve/Download/Load/Save
-|   +-- BoardCanvas.cs        Custom renderer (OnRender)
-|   +-- ProgressWindow.xaml   Okno prubehu s Cancel tlacitkem
-|
-+-- Interfaces/
-    +-- IProgress.cs          Rozhrani pro zpetnou vazbu (AddMessage, Completed)
+    +-- MainWindow.xaml/.cs   Hlavni okno, Solve/Download/Load/Save
+    +-- BoardCanvas.cs        Custom renderer (OnRender)
 ```
 
 ---
@@ -299,28 +257,24 @@ GriddlerSolver/
      |
      | klik "Solve"
      v
-  MainWindow ──────> Config (nastaveni z UI)
+  MainWindow
      |
      | Task.Run (background thread)
      v
-  Solver.Solve(config)
+  Solver.Solve()
      |
      +---> ProcessWorkQueue
               |
-              +---> N worker threadu
+              +---> SolverLine.Solve
               |        |
-              |        +---> SolverLine.Solve
-              |        |        |
-              |        |        +---> LineOverlap.Solve (DP)
-              |        |
-              |        +---> Board.MergeRow/Column
-              |                  |
-              |                  +---> dirty flags na krizovych liniich
-              |                  |
-              |                  +---> re-enqueue dirty linii
+              |        +---> LineOverlap.Solve (DP)
               |
-              +---> drainComplete → workersExited → navrat
+              +---> Board.MergeRow/Column
+                        |
+                        +---> dirty flags na krizovych liniich
+                        |
+                        +---> re-enqueue dirty linii
      |
      v
-  Completed() → MainWindow.Draw() → BoardCanvas.OnRender()
+  Dispatcher.Invoke → MainWindow.Draw() → BoardCanvas.OnRender()
 ```

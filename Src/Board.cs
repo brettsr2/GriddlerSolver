@@ -45,11 +45,6 @@ namespace Griddler_Solver
       }
     }
 
-    [JsonIgnore]
-    public TimeSpan TimeTaken
-    { get; set; }
-
-
     public CellValue this[Int32 row, Int32 column]
     {
       get

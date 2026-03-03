@@ -4,9 +4,6 @@ namespace Griddler_Solver
 {
   internal class SolverLine
   {
-    public Config Config
-    { get; set; } = new Config();
-
     public Int32 Index
     { get; set; }
 
@@ -37,19 +34,26 @@ namespace Griddler_Solver
     {
       Changed = false;
       HasContradiction = false;
-      if (Config.Break)
-      {
-        return;
-      }
+
+      CellValue[] snapshot;
       if (IsRow)
       {
-        var row = Solve(Board.GetRow(Index), Hints);
-        Board.MergeRow(Index, row);
+        snapshot = Board.GetRow(Index);
       }
       else
       {
-        var column = Solve(Board.GetColumn(Index), Hints);
-        Board.MergeColumn(Index, column);
+        snapshot = Board.GetColumn(Index);
+      }
+
+      var result = Solve(snapshot, Hints);
+
+      if (IsRow)
+      {
+        Board.MergeRow(Index, result);
+      }
+      else
+      {
+        Board.MergeColumn(Index, result);
       }
     }
     private CellValue[] Solve(CellValue[] line, Hint[] hints)
@@ -69,8 +73,7 @@ namespace Griddler_Solver
         return clone;
       }
 
-      // Cell probing via LineOverlap — O(N²K), mathematically equivalent
-      // to PA for single-cell deductions but polynomial instead of exponential.
+      // Forward+Backward DP via LineOverlap — O(NK) per line
       var overlapResult = LineOverlap.Solve(clone, hints);
       if (overlapResult == null)
       {
