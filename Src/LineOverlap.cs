@@ -61,42 +61,45 @@ namespace Griddler_Solver
       };
     }
 
-    // ThreadStatic DP tables — one allocation per thread, reused across calls
-    [ThreadStatic] private static Boolean[][]? _tls_F;
-    [ThreadStatic] private static Boolean[][]? _tls_B;
-    [ThreadStatic] private static Boolean[]? _tls_canBeBg;
-    [ThreadStatic] private static Boolean[]? _tls_canBeColor;
-    [ThreadStatic] private static Int32[]? _tls_nbrFwd;
+    // DP tables — allocated once and reused across calls to avoid GC pressure
+    // forward[i][j]    = "first i hints fit in cells 0..j-1"
+    // backward[i][j]   = "hints i..K-1 fit in cells j..N-1"
+    // nonBgRunRight[j] = count of consecutive non-Background cells starting at j going right
+    private static Boolean[][]? _dpForward;
+    private static Boolean[][]? _dpBackward;
+    private static Boolean[]? _canBeBackground;
+    private static Boolean[]? _canBeColor;
+    private static Int32[]? _nonBgRunRight;
 
     private static void EnsureDPTables(Int32 K, Int32 N)
     {
-      if (_tls_F == null || _tls_F.Length < K + 1 || _tls_F[0].Length < N + 1)
+      if (_dpForward == null || _dpForward.Length < K + 1 || _dpForward[0].Length < N + 1)
       {
-        _tls_F = new Boolean[K + 1][];
+        _dpForward = new Boolean[K + 1][];
         for (Int32 i = 0; i <= K; i++)
         {
-          _tls_F[i] = new Boolean[N + 1];
+          _dpForward[i] = new Boolean[N + 1];
         }
       }
-      if (_tls_B == null || _tls_B.Length < K + 1 || _tls_B[0].Length < N + 1)
+      if (_dpBackward == null || _dpBackward.Length < K + 1 || _dpBackward[0].Length < N + 1)
       {
-        _tls_B = new Boolean[K + 1][];
+        _dpBackward = new Boolean[K + 1][];
         for (Int32 i = 0; i <= K; i++)
         {
-          _tls_B[i] = new Boolean[N + 1];
+          _dpBackward[i] = new Boolean[N + 1];
         }
       }
-      if (_tls_canBeBg == null || _tls_canBeBg.Length < N)
+      if (_canBeBackground == null || _canBeBackground.Length < N)
       {
-        _tls_canBeBg = new Boolean[N];
+        _canBeBackground = new Boolean[N];
       }
-      if (_tls_canBeColor == null || _tls_canBeColor.Length < N)
+      if (_canBeColor == null || _canBeColor.Length < N)
       {
-        _tls_canBeColor = new Boolean[N];
+        _canBeColor = new Boolean[N];
       }
-      if (_tls_nbrFwd == null || _tls_nbrFwd.Length < N + 1)
+      if (_nonBgRunRight == null || _nonBgRunRight.Length < N + 1)
       {
-        _tls_nbrFwd = new Int32[N + 1];
+        _nonBgRunRight = new Int32[N + 1];
       }
     }
 
@@ -104,21 +107,21 @@ namespace Griddler_Solver
     /// Forward DP: F[i][j] = "first i hints fit in cells 0..j-1".
     /// Same logic as CanFit but saves ALL K+1 rows.
     /// </summary>
-    private static void ComputeForwardDP(CellValue[] line, Hint[] hints, Boolean[][] F)
+    private static void ComputeForwardDP(CellValue[] line, Hint[] hints, Boolean[][] forward)
     {
       Int32 N = line.Length;
       Int32 K = hints.Length;
 
       for (Int32 i = 0; i <= K; i++)
       {
-        Array.Clear(F[i], 0, N + 1);
+        Array.Clear(forward[i], 0, N + 1);
       }
 
-      // Base: F[0][j] = no Color cell in 0..j-1
-      F[0][0] = true;
+      // Base: forward[0][j] = no Color cell in 0..j-1
+      forward[0][0] = true;
       for (Int32 j = 1; j <= N; j++)
       {
-        F[0][j] = F[0][j - 1] && line[j - 1] != CellValue.Color;
+        forward[0][j] = forward[0][j - 1] && line[j - 1] != CellValue.Color;
       }
 
       for (Int32 i = 0; i < K; i++)
@@ -130,22 +133,22 @@ namespace Griddler_Solver
           nbr = line[j - 1] != CellValue.Background ? nbr + 1 : 0;
 
           // Option A: cell j-1 is gap after placing first i+1 hints
-          if (F[i + 1][j - 1] && line[j - 1] != CellValue.Color)
+          if (forward[i + 1][j - 1] && line[j - 1] != CellValue.Color)
           {
-            F[i + 1][j] = true;
+            forward[i + 1][j] = true;
           }
 
           // Option B: hint i placed at cells (j-c)...(j-1)
-          if (!F[i + 1][j] && j >= c && nbr >= c)
+          if (!forward[i + 1][j] && j >= c && nbr >= c)
           {
             Int32 start = j - c;
             if (start == 0)
             {
-              F[i + 1][j] = F[i][0];
+              forward[i + 1][j] = forward[i][0];
             }
             else if (line[start - 1] != CellValue.Color)
             {
-              F[i + 1][j] = F[i][start - 1];
+              forward[i + 1][j] = forward[i][start - 1];
             }
           }
         }
@@ -156,29 +159,29 @@ namespace Griddler_Solver
     /// Backward DP: B[i][j] = "hints i..K-1 fit in cells j..N-1".
     /// Mirror of forward DP, scanning right to left.
     /// </summary>
-    private static void ComputeBackwardDP(CellValue[] line, Hint[] hints, Boolean[][] B, Int32[] nbrFwd)
+    private static void ComputeBackwardDP(CellValue[] line, Hint[] hints, Boolean[][] backward, Int32[] nonBgRunRight)
     {
       Int32 N = line.Length;
       Int32 K = hints.Length;
 
       for (Int32 i = 0; i <= K; i++)
       {
-        Array.Clear(B[i], 0, N + 1);
+        Array.Clear(backward[i], 0, N + 1);
       }
 
-      // Base: B[K][j] = no Color cell in j..N-1
-      B[K][N] = true;
+      // Base: backward[K][j] = no Color cell in j..N-1
+      backward[K][N] = true;
       for (Int32 j = N - 1; j >= 0; j--)
       {
-        B[K][j] = B[K][j + 1] && line[j] != CellValue.Color;
+        backward[K][j] = backward[K][j + 1] && line[j] != CellValue.Color;
       }
 
-      // Precompute forward non-Background run lengths: nbrFwd[j] = run from j going right
-      // nbrFwd[N] must be 0 (sentinel); the array may be reused from a longer line, so initialize explicitly
-      nbrFwd[N] = 0;
+      // Precompute non-Background run lengths going right: nonBgRunRight[j] = run from j going right
+      // nonBgRunRight[N] must be 0 (sentinel); the array may be reused from a longer line, so initialize explicitly
+      nonBgRunRight[N] = 0;
       for (Int32 j = N - 1; j >= 0; j--)
       {
-        nbrFwd[j] = line[j] != CellValue.Background ? nbrFwd[j + 1] + 1 : 0;
+        nonBgRunRight[j] = line[j] != CellValue.Background ? nonBgRunRight[j + 1] + 1 : 0;
       }
 
       for (Int32 i = K - 1; i >= 0; i--)
@@ -187,22 +190,22 @@ namespace Griddler_Solver
         for (Int32 j = N - 1; j >= 0; j--)
         {
           // Option A: cell j is gap, hints i..K-1 placed somewhere after j
-          if (B[i][j + 1] && line[j] != CellValue.Color)
+          if (backward[i][j + 1] && line[j] != CellValue.Color)
           {
-            B[i][j] = true;
+            backward[i][j] = true;
           }
 
           // Option B: place hint i at cells j..j+c-1
-          if (!B[i][j] && j + c <= N && nbrFwd[j] >= c)
+          if (!backward[i][j] && j + c <= N && nonBgRunRight[j] >= c)
           {
             Int32 afterHint = j + c;
             if (afterHint == N)
             {
-              B[i][j] = B[i + 1][N];
+              backward[i][j] = backward[i + 1][N];
             }
             else if (line[afterHint] != CellValue.Color)
             {
-              B[i][j] = B[i + 1][afterHint + 1];
+              backward[i][j] = backward[i + 1][afterHint + 1];
             }
           }
         }
@@ -219,24 +222,24 @@ namespace Griddler_Solver
       Int32 K = hints.Length;
 
       EnsureDPTables(K, N);
-      Boolean[][] F = _tls_F!;
-      Boolean[][] B = _tls_B!;
-      Boolean[] canBeBg = _tls_canBeBg!;
-      Boolean[] canBeColor = _tls_canBeColor!;
-      Int32[] nbrFwd = _tls_nbrFwd!;
+      Boolean[][] forward = _dpForward!;
+      Boolean[][] backward = _dpBackward!;
+      Boolean[] canBeBackground = _canBeBackground!;
+      Boolean[] canBeColor = _canBeColor!;
+      Int32[] nonBgRunRight = _nonBgRunRight!;
 
       // 1. Forward DP
-      ComputeForwardDP(line, hints, F);
-      if (!F[K][N])
+      ComputeForwardDP(line, hints, forward);
+      if (!forward[K][N])
       {
         return null; // No valid placement exists — contradiction
       }
 
       // 2. Backward DP
-      ComputeBackwardDP(line, hints, B, nbrFwd);
+      ComputeBackwardDP(line, hints, backward, nonBgRunRight);
 
-      // 3. Compute canBeBg: cell j can be Background if there's a valid split
-      Array.Clear(canBeBg, 0, N);
+      // 3. Compute canBeBackground: cell j can be Background if there's a valid split
+      Array.Clear(canBeBackground, 0, N);
       for (Int32 j = 0; j < N; j++)
       {
         if (line[j] == CellValue.Color)
@@ -245,9 +248,9 @@ namespace Griddler_Solver
         }
         for (Int32 i = 0; i <= K; i++)
         {
-          if (F[i][j] && B[i][j + 1])
+          if (forward[i][j] && backward[i][j + 1])
           {
-            canBeBg[j] = true;
+            canBeBackground[j] = true;
             break;
           }
         }
@@ -261,7 +264,7 @@ namespace Griddler_Solver
         for (Int32 s = 0; s <= N - c; s++)
         {
           // Check span: all cells s..s+c-1 are non-Background
-          if (nbrFwd[s] < c)
+          if (nonBgRunRight[s] < c)
           {
             continue;
           }
@@ -270,11 +273,11 @@ namespace Griddler_Solver
           Boolean beforeOK;
           if (s == 0)
           {
-            beforeOK = F[i][0];
+            beforeOK = forward[i][0];
           }
           else
           {
-            beforeOK = line[s - 1] != CellValue.Color && F[i][s - 1];
+            beforeOK = line[s - 1] != CellValue.Color && forward[i][s - 1];
           }
           if (!beforeOK)
           {
@@ -286,11 +289,11 @@ namespace Griddler_Solver
           Boolean afterOK;
           if (afterHint >= N)
           {
-            afterOK = B[i + 1][N];
+            afterOK = backward[i + 1][N];
           }
           else
           {
-            afterOK = line[afterHint] != CellValue.Color && B[i + 1][afterHint + 1];
+            afterOK = line[afterHint] != CellValue.Color && backward[i + 1][afterHint + 1];
           }
           if (!afterOK)
           {
@@ -313,15 +316,15 @@ namespace Griddler_Solver
         {
           continue;
         }
-        if (!canBeBg[j] && !canBeColor[j])
+        if (!canBeBackground[j] && !canBeColor[j])
         {
           return null; // Contradiction — cell can be neither
         }
-        if (canBeColor[j] && !canBeBg[j])
+        if (canBeColor[j] && !canBeBackground[j])
         {
           deductions[j] = CellValue.Color;
         }
-        else if (canBeBg[j] && !canBeColor[j])
+        else if (canBeBackground[j] && !canBeColor[j])
         {
           deductions[j] = CellValue.Background;
         }
