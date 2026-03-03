@@ -41,7 +41,7 @@ na krizove linie a opakuji se, dokud se fronta nevyprazdni.
 ## LineOverlap DP — jadro solveru — O(N*K)
 
 Pro kazdy radek/sloupec vola `LineOverlap.Solve()`,
-ktery najde **vsechny vynucene bunky** pomoci dynamickeho programovani.
+ktery najde **vsechny vynucene bunky** pomoci dynamickeho programovani - DP.
 
 ### Krok 1: TryFitLeft / TryFitRight
 
